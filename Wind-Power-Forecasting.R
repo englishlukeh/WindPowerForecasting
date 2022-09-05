@@ -6,6 +6,8 @@ library("readxl")
 library(fpp3)
 library(zoo)
 library(stats)
+library(foreach)
+library(doParallel)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set this to your working directory
 
@@ -81,6 +83,8 @@ hr1_power <- min10_power %>%
 min10_power <- min10_power %>%
   rename(Time = PCTimeStamp)
 
+# set the proportion of training set
+TrainingProportion <- 0.95
 
 
 
@@ -159,20 +163,29 @@ N = nrow(min10_power)/n_keys(min10_power)
 # initialize our accuracy tibble
 fc10_benchmark_accuracy <- NULL;
 
+# set up parallelisation
+registerDoParallel(cl <- makeCluster(15))
+
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-for (i in seq(ceiling(N*0.9),N-1,1))
+fc10_benchmark_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
+  
   # take training set from elements 1 up to i
   min10_tr_benchmark <- min10_benchmark %>%
     slice_head(n = i)
   
+  fc_benchmark_accuracy <- NULL;
+  
   # initialize the accuracy tibble
-  fc10_benchmark_accuracy <- fc_benchmark_accuracy %>%
+  fc_benchmark_accuracy <- fc_benchmark_accuracy %>%
     bind_rows(min10_tr_benchmark %>%
-    model(naive_model = NAIVE(Power)) %>%
-    forecast(h=1) %>% 
-    accuracy(min10_power) %>% mutate(.id = i))
+                model(naive_model = NAIVE(Power)) %>%
+                forecast(h=1) %>% 
+                accuracy(min10_power) %>% mutate(.id = i))
+  
+  return(fc_benchmark_accuracy)
 }
+  stopCluster(cl)
 
 
 
@@ -189,20 +202,29 @@ N = nrow(min20_power)/n_keys(min20_power)
 # initialize our accuracy tibble
 fc20_benchmark_accuracy <- NULL;
 
+# set up parallelisation
+registerDoParallel(cl <- makeCluster(15))
+
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-for (i in seq(ceiling(N*0.9),N-1,1))
-{
-  # take training set from elements 1 up to i
-  min20_tr_benchmark <- min20_benchmark %>%
-    slice_head(n = i)
-  
-  # initialize the accuracy tibble
-  fc20_benchmark_accuracy <- fc20_benchmark_accuracy %>%
-    bind_rows(min20_tr_benchmark %>%
-                model(naive_model = NAIVE(Power)) %>%
-                forecast(h=1) %>% 
-                accuracy(min20_power) %>% mutate(.id = i))
-}
+fc20_benchmark_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
+  {
+    
+    # take training set from elements 1 up to i
+    min20_tr_benchmark <- min20_benchmark %>%
+      slice_head(n = i)
+    
+    fc_benchmark_accuracy <- NULL;
+    
+    # initialize the accuracy tibble
+    fc_benchmark_accuracy <- fc_benchmark_accuracy %>%
+      bind_rows(min20_tr_benchmark %>%
+                  model(naive_model = NAIVE(Power)) %>%
+                  forecast(h=1) %>% 
+                  accuracy(min20_power) %>% mutate(.id = i))
+    
+    return(fc_benchmark_accuracy)
+  }
+stopCluster(cl)
 
 
 
@@ -219,20 +241,29 @@ N = nrow(min30_power)/n_keys(min30_power)
 # initialize our accuracy tibble
 fc30_benchmark_accuracy <- NULL;
 
+# set up parallelisation
+registerDoParallel(cl <- makeCluster(15))
+
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-for (i in seq(ceiling(N*0.9),N-1,1))
-{
-  # take training set from elements 1 up to i
-  min30_tr_benchmark <- min30_benchmark %>%
-    slice_head(n = i)
-  
-  # initialize the accuracy tibble
-  fc30_benchmark_accuracy <- fc30_benchmark_accuracy %>%
-    bind_rows(min30_tr_benchmark %>%
-                model(naive_model = NAIVE(Power)) %>%
-                forecast(h=1) %>% 
-                accuracy(min30_power) %>% mutate(.id = i))
-}
+fc30_benchmark_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
+  {
+    
+    # take training set from elements 1 up to i
+    min30_tr_benchmark <- min30_benchmark %>%
+      slice_head(n = i)
+    
+    fc_benchmark_accuracy <- NULL;
+    
+    # initialize the accuracy tibble
+    fc_benchmark_accuracy <- fc_benchmark_accuracy %>%
+      bind_rows(min30_tr_benchmark %>%
+                  model(naive_model = NAIVE(Power)) %>%
+                  forecast(h=1) %>% 
+                  accuracy(min30_power) %>% mutate(.id = i))
+    
+    return(fc_benchmark_accuracy)
+  }
+stopCluster(cl)
 
 
 
@@ -249,20 +280,29 @@ N = nrow(hr1_power)/n_keys(hr1_power)
 # initialize our accuracy tibble
 fc1_benchmark_accuracy <- NULL;
 
+# set up parallelisation
+registerDoParallel(cl <- makeCluster(15))
+
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-for (i in seq(ceiling(N*0.9),N-1,1))
-{
-  # take training set from elements 1 up to i
-  hr1_tr_benchmark <- hr1_benchmark %>%
-    slice_head(n = i)
-  
-  # initialize the accuracy tibble
-  fc1_benchmark_accuracy <- fc1_benchmark_accuracy %>%
-    bind_rows(hr1_tr_benchmark %>%
-                model(naive_model = NAIVE(Power)) %>%
-                forecast(h=1) %>% 
-                accuracy(hr1_power) %>% mutate(.id = i))
-}
+fc1_benchmark_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
+  {
+    
+    # take training set from elements 1 up to i
+    hr1_tr_benchmark <- hr1_benchmark %>%
+      slice_head(n = i)
+    
+    fc_benchmark_accuracy <- NULL;
+    
+    # initialize the accuracy tibble
+    fc_benchmark_accuracy <- fc_benchmark_accuracy %>%
+      bind_rows(hr1_tr_benchmark %>%
+                  model(naive_model = NAIVE(Power)) %>%
+                  forecast(h=1) %>% 
+                  accuracy(hr1_power) %>% mutate(.id = i))
+    
+    return(fc_benchmark_accuracy)
+  }
+stopCluster(cl)
 
 
 
@@ -278,12 +318,18 @@ N = nrow(min10_power)/n_keys(min10_power)
 # initialize accuracy tibble
 fc10_accuracy <- NULL;
 
+# set up parallelisation
+registerDoParallel(cl <- makeCluster(7))
+
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-for (i in seq(ceiling(0.9*N),N-1,1))
+fc10_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
   # take training set from elements 1 up to i
   min10_tr <- min10 %>%
     slice_head(n = i)
+  
+  # initialize accuracy tibble
+  fc_accuracy <- NULL;
   
   # compute features on data set
   min10_tr <- min10_tr %>% mutate(
@@ -462,14 +508,16 @@ for (i in seq(ceiling(0.9*N),N-1,1))
     )
   
   # forecast with new data
-  fc10_accuracy <- fc10_accuracy %>%
+  fc_accuracy <- fc_accuracy %>%
     bind_rows(fit_total %>%
     forecast(new_data = min10_tr_test %>% 
                group_by(Group, Subgroup) %>% 
                slice_tail(n = 1)) %>% 
     accuracy(min10_power) %>% mutate(.id = i))
   
+  return(fc_accuracy)
 }
+stopCluster(cl)
 
 
 
@@ -484,12 +532,18 @@ N = nrow(min20_power)/n_keys(min20_power)
 # initialize accuracy tibble
 fc20_accuracy <- NULL;
 
+# set up parallelisation
+registerDoParallel(cl <- makeCluster(15))
+
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-for (i in seq(ceiling(0.9*N),N-1,1))
+fc20_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
   # take training set from elements 1 up to i
   min20_tr <- min20 %>%
     slice_head(n = i)
+  
+  # initialize accuracy tibble
+  fc_accuracy <- NULL;
   
   # compute features on data set
   min20_tr <- min20_tr %>% mutate(
@@ -668,14 +722,16 @@ for (i in seq(ceiling(0.9*N),N-1,1))
     )
   
   # forecast with new data
-  fc20_accuracy <- fc20_accuracy %>%
+  fc_accuracy <- fc_accuracy %>%
     bind_rows(fit_total %>%
                 forecast(new_data = min20_tr_test %>% 
                            group_by(Group, Subgroup) %>% 
                            slice_tail(n = 1)) %>% 
                 accuracy(min20_power) %>% mutate(.id = i))
   
+  return(fc_accuracy)
 }
+stopCluster(cl)
 
 
 
@@ -690,12 +746,18 @@ N = nrow(min30_power)/n_keys(min30_power)
 # initialize accuracy tibble
 fc30_accuracy <- NULL;
 
+# set up parallelisation
+registerDoParallel(cl <- makeCluster(15))
+
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-for (i in seq(ceiling(0.9*N),N-1,1))
+fc30_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
   # take training set from elements 1 up to i
   min30_tr <- min30 %>%
     slice_head(n = i)
+  
+  # initialize accuracy tibble
+  fc_accuracy <- NULL;
   
   # compute features on data set
   min30_tr <- min30_tr %>% mutate(
@@ -874,17 +936,19 @@ for (i in seq(ceiling(0.9*N),N-1,1))
     )
   
   # forecast with new data
-  fc30_accuracy <- fc30_accuracy %>%
+  fc_accuracy <- fc_accuracy %>%
     bind_rows(fit_total %>%
                 forecast(new_data = min30_tr_test %>% 
                            group_by(Group, Subgroup) %>% 
                            slice_tail(n = 1)) %>% 
                 accuracy(min30_power) %>% mutate(.id = i))
   
+  return(fc_accuracy)
 }
+stopCluster(cl)
 
 
-#### Time series linear regression with feature engineering - 30 minutely ####
+#### Time series linear regression with feature engineering - 1 hourly ####
 # again we use TSCV to evaluate the model
 hr1 <- hr1_power
 # %>%  filter_index("2021-06-30")
@@ -895,12 +959,18 @@ N = nrow(hr1_power)/n_keys(hr1_power)
 # initialize accuracy tibble
 fc1_accuracy <- NULL;
 
+# set up parallelisation
+registerDoParallel(cl <- makeCluster(15))
+
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-for (i in seq(ceiling(0.9*N),N-1,1))
+fc1_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
   # take training set from elements 1 up to i
   hr1_tr <- hr1 %>%
     slice_head(n = i)
+  
+  # initialize accuracy tibble
+  fc_accuracy <- NULL;
   
   # compute features on data set
   hr1_tr <- hr1_tr %>% mutate(
@@ -1079,14 +1149,16 @@ for (i in seq(ceiling(0.9*N),N-1,1))
     )
   
   # forecast with new data
-  fc1_accuracy <- fc1_accuracy %>%
+  fc_accuracy <- fc_accuracy %>%
     bind_rows(fit_total %>%
                 forecast(new_data = hr1_tr_test %>% 
                            group_by(Group, Subgroup) %>% 
                            slice_tail(n = 1)) %>% 
                 accuracy(hr1_power) %>% mutate(.id = i))
   
+  return(fc_accuracy)
 }
+stopCluster(cl)
 
 
   
@@ -1268,15 +1340,3 @@ accuracy1_L2 <- accuracy1_error %>%
   filter(!is_aggregated(Subgroup), !is_aggregated(Group)) %>%
   group_by(.model) %>%
   summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
-
-
-
-#### Testing code ####
-A1 = min10_power %>%
-  filter(Subgroup == "A1")
-Wind_speed_time <- A1$Wind_Speed
-Wind_speed_freq <- fft(Wind_speed_time, inverse = FALSE)
-
-plot(1:100, abs(Wind_speed_freq[1:100]))
-acf(diff(Wind_speed_time, 1))
-acf(Wind_speed_time)
