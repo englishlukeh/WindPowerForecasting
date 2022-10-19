@@ -8,6 +8,8 @@ library(zoo)
 library(stats)
 library(foreach)
 library(doParallel)
+library(lightgbm)
+library(distributional)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set this to your working directory
 
@@ -57,50 +59,52 @@ min10_power <- dataset %>%
 
 #20 minutely
 min20_power <- min10_power %>%
-  group_by_key() %>%
   index_by(Time = ~ lubridate::floor_date(., "20 minutes")) %>%
   summarise(
-    Power = sum(Power), Wind_Speed = sum(Wind_Speed)
-  )
+    Power = mean(Power), Wind_Speed = mean(Wind_Speed)
+  ) %>%
+  group_by_key()
 
 #30 minutely
 min30_power <- min10_power %>%
-  group_by_key() %>%
   index_by(Time = ~ lubridate::floor_date(., "30 minutes")) %>%
   summarise(
-    Power = sum(Power), Wind_Speed = sum(Wind_Speed)
-  )
+    Power = mean(Power), Wind_Speed = mean(Wind_Speed)
+  ) %>%
+  group_by_key()
 
 #1 hourly
 hr1_power <- min10_power %>%
-  group_by_key() %>%
   index_by(Time = ~ lubridate::floor_date(., "1 hour")) %>%
   summarise(
-    Power = sum(Power), Wind_Speed = sum(Wind_Speed)
-  )
+    Power = mean(Power), Wind_Speed = mean(Wind_Speed)
+  ) %>%
+  group_by_key()
 
 # change index name to Time for uniformity with 20-minutely, 30-minutely, 1-hourly data
 min10_power <- min10_power %>%
   rename(Time = PCTimeStamp)
 
 # set the proportion of training set
-TrainingProportion <- 0.95
+TrainingProportion <- 0.90
+# set number of threads
+numThreads = 4;
 
 
 
-#### Check correlations ####
+#### Check correlation of wind and power ####
 
 #check correlation for hourly
 for (val in node_names) {
   tmp <- hr1_power %>%
     filter(Subgroup == val)
-  
+
   Filename = paste(val, "_hourly.png", sep = "")
-  tmp_plot <- ggplot(tmp, aes(x = Wind_Speed, y = Power)) + 
+  tmp_plot <- ggplot(tmp, aes(x = Wind_Speed, y = Power)) +
   geom_point() +
   labs(x = "Wind Speed (m/s)",
        y = "Average Power (kW)", title = paste("Hourly Data, Turbine:", val))
-  
+
   ggsave(Filename, tmp_plot)
 }
 
@@ -108,13 +112,13 @@ for (val in node_names) {
 for (val in node_names) {
   tmp <- min10_power %>%
     filter(Subgroup == val)
-  
+
   Filename = paste(val, "_10minutely.png", sep = "")
-  tmp_plot <- ggplot(tmp, aes(x = Wind_Speed, y = Power)) + 
+  tmp_plot <- ggplot(tmp, aes(x = Wind_Speed, y = Power)) +
     geom_point() +
     labs(x = "Wind Speed (m/s)",
          y = "Average Power (kW)", title = paste("10-Minutely Data, Turbine:", val))
-  
+
   ggsave(Filename, tmp_plot)
 }
 
@@ -122,13 +126,13 @@ for (val in node_names) {
 for (val in node_names) {
   tmp <- min20_power %>%
     filter(Subgroup == val)
-  
+
   Filename = paste(val, "_20minutely.png", sep = "")
-  tmp_plot <- ggplot(tmp, aes(x = Wind_Speed, y = Power)) + 
+  tmp_plot <- ggplot(tmp, aes(x = Wind_Speed, y = Power)) +
     geom_point() +
     labs(x = "Wind Speed (m/s)",
          y = "Average Power (kW)", title = paste("20-Minutely Data, Turbine:", val))
-  
+
   ggsave(Filename, tmp_plot)
 }
 
@@ -136,56 +140,93 @@ for (val in node_names) {
 for (val in node_names) {
   tmp <- min30_power %>%
     filter(Subgroup == val)
-  
+
   Filename = paste(val, "_30minutely.png", sep = "")
-  tmp_plot <- ggplot(tmp, aes(x = Wind_Speed, y = Power)) + 
+  tmp_plot <- ggplot(tmp, aes(x = Wind_Speed, y = Power)) +
     geom_point() +
     labs(x = "Wind Speed (m/s)",
          y = "Average Power (kW)", title = paste("30-Minutely Data, Turbine:", val))
-  
+
   ggsave(Filename, tmp_plot)
 }
 
 
+#### Investigate seasonality ####
 
+min10_power %>%
+  filter(is_aggregated(Group), is_aggregated(Subgroup)) %>%
+  filter_index("2021-06") %>%
+  model(
+    STL(Power ~ season(period=6) + season(period=6*24),
+        robust = TRUE)) %>%
+  components() %>%
+  autoplot()
+
+min20_power %>%
+  filter(is_aggregated(Group), is_aggregated(Subgroup)) %>%
+  filter_index("2021-06") %>%
+  model(
+    STL(Power ~ season(period=3) + season(period=3*24),
+        robust = TRUE)) %>%
+  components() %>%
+  autoplot()
+
+min30_power %>%
+  filter(is_aggregated(Group), is_aggregated(Subgroup)) %>%
+  filter_index("2021-06") %>%
+  model(
+    STL(Power ~ season(period=2) + season(period=2*24),
+        robust = TRUE)) %>%
+  components() %>%
+  autoplot()
+
+hr1_power %>%
+  filter(is_aggregated(Group), is_aggregated(Subgroup)) %>%
+  filter_index("2021-06") %>%
+  model(
+    STL(Power ~ season(period=24),
+        robust = TRUE)) %>%
+  components() %>%
+  autoplot()
 
 
 #### Benchmark models - 10 minutely ####
 # we use TSCV, forecasting on rolling origin basis
 
 # initialize our data set
-min10_benchmark <- min10_power 
+min10_benchmark <- min10_power
 #%>% filter_index("2021-06-30")
 
 # compute number of entries
-N = nrow(min10_power)/n_keys(min10_power)  
+N = nrow(min10_power)/n_keys(min10_power)
 
 # initialize our accuracy tibble
 fc10_benchmark_accuracy <- NULL;
 
 # set up parallelisation
-registerDoParallel(cl <- makeCluster(15))
+registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
 fc10_benchmark_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
-  
+
   # take training set from elements 1 up to i
   min10_tr_benchmark <- min10_benchmark %>%
     slice_head(n = i)
-  
+
   fc_benchmark_accuracy <- NULL;
-  
+
   # initialize the accuracy tibble
   fc_benchmark_accuracy <- fc_benchmark_accuracy %>%
     bind_rows(min10_tr_benchmark %>%
                 model(naive_model = NAIVE(Power)) %>%
-                forecast(h=1) %>% 
+                forecast(h=1) %>%
                 accuracy(min10_power) %>% mutate(.id = i))
-  
+
+  gc()
   return(fc_benchmark_accuracy)
 }
-  stopCluster(cl)
+stopCluster(cl)
 
 
 
@@ -193,35 +234,36 @@ fc10_benchmark_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1),
 # we use TSCV, forecasting on rolling origin basis
 
 # initialize our data set
-min20_benchmark <- min20_power %>% group_by(Group, Subgroup)
+min20_benchmark <- min20_power
 #%>% filter_index("2021-06-30")
 
 # compute number of entries
-N = nrow(min20_power)/n_keys(min20_power)  
+N = nrow(min20_power)/n_keys(min20_power)
 
 # initialize our accuracy tibble
 fc20_benchmark_accuracy <- NULL;
 
 # set up parallelisation
-registerDoParallel(cl <- makeCluster(15))
+registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
 fc20_benchmark_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
   {
-    
+
     # take training set from elements 1 up to i
     min20_tr_benchmark <- min20_benchmark %>%
       slice_head(n = i)
-    
+
     fc_benchmark_accuracy <- NULL;
-    
+
     # initialize the accuracy tibble
     fc_benchmark_accuracy <- fc_benchmark_accuracy %>%
       bind_rows(min20_tr_benchmark %>%
                   model(naive_model = NAIVE(Power)) %>%
-                  forecast(h=1) %>% 
+                  forecast(h=1) %>%
                   accuracy(min20_power) %>% mutate(.id = i))
-    
+
+    gc()
     return(fc_benchmark_accuracy)
   }
 stopCluster(cl)
@@ -232,35 +274,36 @@ stopCluster(cl)
 # we use TSCV, forecasting on rolling origin basis
 
 # initialize our data set
-min30_benchmark <- min30_power %>% group_by(Group, Subgroup)
+min30_benchmark <- min30_power
 #%>% filter_index("2021-06-30")
 
 # compute number of entries
-N = nrow(min30_power)/n_keys(min30_power)  
+N = nrow(min30_power)/n_keys(min30_power)
 
 # initialize our accuracy tibble
 fc30_benchmark_accuracy <- NULL;
 
 # set up parallelisation
-registerDoParallel(cl <- makeCluster(15))
+registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
 fc30_benchmark_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
   {
-    
+
     # take training set from elements 1 up to i
     min30_tr_benchmark <- min30_benchmark %>%
       slice_head(n = i)
-    
+
     fc_benchmark_accuracy <- NULL;
-    
+
     # initialize the accuracy tibble
     fc_benchmark_accuracy <- fc_benchmark_accuracy %>%
       bind_rows(min30_tr_benchmark %>%
                   model(naive_model = NAIVE(Power)) %>%
-                  forecast(h=1) %>% 
+                  forecast(h=1) %>%
                   accuracy(min30_power) %>% mutate(.id = i))
-    
+
+    gc()
     return(fc_benchmark_accuracy)
   }
 stopCluster(cl)
@@ -275,31 +318,32 @@ hr1_benchmark <- hr1_power %>% group_by(Group, Subgroup)
 #%>% filter_index("2021-06-30")
 
 # compute number of entries
-N = nrow(hr1_power)/n_keys(hr1_power)  
+N = nrow(hr1_power)/n_keys(hr1_power)
 
 # initialize our accuracy tibble
 fc1_benchmark_accuracy <- NULL;
 
 # set up parallelisation
-registerDoParallel(cl <- makeCluster(15))
+registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
 fc1_benchmark_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
   {
-    
+
     # take training set from elements 1 up to i
     hr1_tr_benchmark <- hr1_benchmark %>%
       slice_head(n = i)
-    
+
     fc_benchmark_accuracy <- NULL;
-    
+
     # initialize the accuracy tibble
     fc_benchmark_accuracy <- fc_benchmark_accuracy %>%
       bind_rows(hr1_tr_benchmark %>%
                   model(naive_model = NAIVE(Power)) %>%
-                  forecast(h=1) %>% 
+                  forecast(h=1) %>%
                   accuracy(hr1_power) %>% mutate(.id = i))
-    
+
+    gc()
     return(fc_benchmark_accuracy)
   }
 stopCluster(cl)
@@ -313,108 +357,107 @@ min10 <- min10_power
 # %>%  filter_index("2021-06-30")
 
 # compute number of entries
-N = nrow(min10_power)/n_keys(min10_power)  
+N = nrow(min10_power)/n_keys(min10_power)
 
 # initialize accuracy tibble
 fc10_accuracy <- NULL;
 
+# compute features on data set
+min10 <- min10 %>% mutate(
+  `WMA2` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 3, .after = -1, .complete = TRUE),
+  `WMA3` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 4, .after = -1, .complete = TRUE),
+  `WMA4` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 5, .after = -1, .complete = TRUE),
+  `WMA5` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 6, .after = -1, .complete = TRUE),
+  `WMA6` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 7, .after = -1, .complete = TRUE),
+  `WMSD2` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 3, .after = -1, .complete = TRUE),
+  `WMSD3` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 4, .after = -1, .complete = TRUE),
+  `WMSD4` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 5, .after = -1, .complete = TRUE),
+  `WMSD5` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 6, .after = -1, .complete = TRUE),
+  `WMSD6` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 7, .after = -1, .complete = TRUE),
+  `PMA2` = slider::slide_dbl(Power, mean,
+                             .before = 3, .after = -1, .complete = TRUE),
+  `PMA3` = slider::slide_dbl(Power, mean,
+                             .before = 4, .after = -1, .complete = TRUE),
+  `PMA4` = slider::slide_dbl(Power, mean,
+                             .before = 5, .after = -1, .complete = TRUE),
+  `PMA5` = slider::slide_dbl(Power, mean,
+                             .before = 6, .after = -1, .complete = TRUE),
+  `PMA6` = slider::slide_dbl(Power, mean,
+                             .before = 7, .after = -1, .complete = TRUE),
+  `PMSD2` = slider::slide_dbl(Power, sd,
+                              .before = 3, .after = -1, .complete = TRUE),
+  `PMSD3` = slider::slide_dbl(Power, sd,
+                              .before = 4, .after = -1, .complete = TRUE),
+  `PMSD4` = slider::slide_dbl(Power, sd,
+                              .before = 5, .after = -1, .complete = TRUE),
+  `PMSD5` = slider::slide_dbl(Power, sd,
+                              .before = 6, .after = -1, .complete = TRUE),
+  `PMSD6` = slider::slide_dbl(Power, sd,
+                              .before = 7, .after = -1, .complete = TRUE),
+  `lag_wind1` = lag(Wind_Speed, 1),
+  `lag_wind2` = lag(Wind_Speed, 2),
+  `lag_wind3` = lag(Wind_Speed, 3),
+  `lag_wind4` = lag(Wind_Speed, 4),
+  `lag_wind5` = lag(Wind_Speed, 5),
+  `lag_wind6` = lag(Wind_Speed, 6),
+  `lag_power1` = lag(Power, 1),
+  `lag_power2` = lag(Power, 2),
+  `lag_power3` = lag(Power, 3),
+  `lag_power4` = lag(Power, 4),
+  `lag_power5` = lag(Power, 5),
+  `lag_power6` = lag(Power, 6),
+  `is_q1` = as.integer(quarter(Time)==1),
+  `is_q2` = as.integer(quarter(Time)==2),
+  `is_q3` = as.integer(quarter(Time)==3),
+  `is_00` = as.integer(hour(Time) == 0),
+  `is_01` = as.integer(hour(Time) == 1),
+  `is_02` = as.integer(hour(Time) == 2),
+  `is_03` = as.integer(hour(Time) == 3),
+  `is_04` = as.integer(hour(Time) == 4),
+  `is_05` = as.integer(hour(Time) == 5),
+  `is_06` = as.integer(hour(Time) == 6),
+  `is_07` = as.integer(hour(Time) == 7),
+  `is_08` = as.integer(hour(Time) == 8),
+  `is_09` = as.integer(hour(Time) == 9),
+  `is_10` = as.integer(hour(Time) == 10),
+  `is_11` = as.integer(hour(Time) == 11),
+  `is_12` = as.integer(hour(Time) == 12),
+  `is_13` = as.integer(hour(Time) == 13),
+  `is_14` = as.integer(hour(Time) == 14),
+  `is_15` = as.integer(hour(Time) == 15),
+  `is_16` = as.integer(hour(Time) == 16),
+  `is_17` = as.integer(hour(Time) == 17),
+  `is_18` = as.integer(hour(Time) == 18),
+  `is_19` = as.integer(hour(Time) == 19),
+  `is_20` = as.integer(hour(Time) == 20),
+  `is_21` = as.integer(hour(Time) == 21),
+  `is_22` = as.integer(hour(Time) == 22)
+)
+
 # set up parallelisation
-registerDoParallel(cl <- makeCluster(7))
+registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
 fc10_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
-  # take training set from elements 1 up to i
-  min10_tr <- min10 %>%
-    slice_head(n = i)
-  
+  # training set is from elements 1 up to i, i+1 is 1-step forecast
+
   # initialize accuracy tibble
   fc_accuracy <- NULL;
-  
-  # compute features on data set
-  min10_tr <- min10_tr %>% mutate(
-    `WMA2` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 3, .after = -1, .complete = TRUE),
-    `WMA3` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 4, .after = -1, .complete = TRUE),
-    `WMA4` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 5, .after = -1, .complete = TRUE),
-    `WMA5` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 6, .after = -1, .complete = TRUE),
-    `WMA6` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 7, .after = -1, .complete = TRUE),
-    `WMSD2` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 3, .after = -1, .complete = TRUE),
-    `WMSD3` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 4, .after = -1, .complete = TRUE),
-    `WMSD4` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 5, .after = -1, .complete = TRUE),
-    `WMSD5` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 6, .after = -1, .complete = TRUE),
-    `WMSD6` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 7, .after = -1, .complete = TRUE),				 
-    `PMA2` = slider::slide_dbl(Power, mean,
-                               .before = 3, .after = -1, .complete = TRUE),
-    `PMA3` = slider::slide_dbl(Power, mean,
-                               .before = 4, .after = -1, .complete = TRUE),
-    `PMA4` = slider::slide_dbl(Power, mean,
-                               .before = 5, .after = -1, .complete = TRUE),
-    `PMA5` = slider::slide_dbl(Power, mean,
-                               .before = 6, .after = -1, .complete = TRUE),
-    `PMA6` = slider::slide_dbl(Power, mean,
-                               .before = 7, .after = -1, .complete = TRUE),					
-    `PMSD2` = slider::slide_dbl(Power, sd,
-                                .before = 3, .after = -1, .complete = TRUE),
-    `PMSD3` = slider::slide_dbl(Power, sd,
-                                .before = 4, .after = -1, .complete = TRUE),
-    `PMSD4` = slider::slide_dbl(Power, sd,
-                                .before = 5, .after = -1, .complete = TRUE),
-    `PMSD5` = slider::slide_dbl(Power, sd,
-                                .before = 6, .after = -1, .complete = TRUE),
-    `PMSD6` = slider::slide_dbl(Power, sd,
-                                .before = 7, .after = -1, .complete = TRUE),
-    `lag_wind1` = lag(Wind_Speed, 1),
-    `lag_wind2` = lag(Wind_Speed, 2),
-    `lag_wind3` = lag(Wind_Speed, 3),
-    `lag_wind4` = lag(Wind_Speed, 4),
-    `lag_wind5` = lag(Wind_Speed, 5),
-    `lag_wind6` = lag(Wind_Speed, 6),
-    `lag_power1` = lag(Power, 1),
-    `lag_power2` = lag(Power, 2),
-    `lag_power3` = lag(Power, 3),
-    `lag_power4` = lag(Power, 4),
-    `lag_power5` = lag(Power, 5),
-    `lag_power6` = lag(Power, 6),
-    `is_q1` = as.integer(quarter(Time)==1),
-    `is_q2` = as.integer(quarter(Time)==2),
-    `is_q3` = as.integer(quarter(Time)==3),
-    `is_00` = as.integer(hour(Time) == 0),
-    `is_01` = as.integer(hour(Time) == 1),
-    `is_02` = as.integer(hour(Time) == 2),
-    `is_03` = as.integer(hour(Time) == 3),
-    `is_04` = as.integer(hour(Time) == 4),
-    `is_05` = as.integer(hour(Time) == 5),
-    `is_06` = as.integer(hour(Time) == 6),
-    `is_07` = as.integer(hour(Time) == 7),
-    `is_08` = as.integer(hour(Time) == 8),
-    `is_09` = as.integer(hour(Time) == 9),
-    `is_10` = as.integer(hour(Time) == 10),
-    `is_11` = as.integer(hour(Time) == 11),
-    `is_12` = as.integer(hour(Time) == 12),
-    `is_13` = as.integer(hour(Time) == 13),
-    `is_14` = as.integer(hour(Time) == 14),
-    `is_15` = as.integer(hour(Time) == 15),
-    `is_16` = as.integer(hour(Time) == 16),
-    `is_17` = as.integer(hour(Time) == 17),
-    `is_18` = as.integer(hour(Time) == 18),
-    `is_19` = as.integer(hour(Time) == 19),
-    `is_20` = as.integer(hour(Time) == 20),
-    `is_21` = as.integer(hour(Time) == 21),
-    `is_22` = as.integer(hour(Time) == 22)
-  )
-  
+
   # compute fit
-  fit_total <- min10_tr %>%
+  fit_total <- min10 %>%
+    slice_head(n = i) %>%
     model(mod1 = TSLM(Power ~ WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
     reconcile(
       bu_mod1 = bottom_up(mod1),
@@ -423,98 +466,16 @@ fc10_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine 
       ols_mod1 = min_trace(mod1, method = "ols"),
       mint_mod1 = min_trace(mod1, method = "mint_shrink")
     )
-  
-  # add new data for forecasting 1 step ahead
-  min10_tr_test <- append_row(min10_tr, 1, keep_all = TRUE) %>% 
-    mutate(
-      `WMA2` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 3, .after = -1, .complete = TRUE),
-      `WMA3` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 4, .after = -1, .complete = TRUE),
-      `WMA4` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 5, .after = -1, .complete = TRUE),
-      `WMA5` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 6, .after = -1, .complete = TRUE),
-      `WMA6` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 7, .after = -1, .complete = TRUE),
-      `WMSD2` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 3, .after = -1, .complete = TRUE),
-      `WMSD3` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 4, .after = -1, .complete = TRUE),
-      `WMSD4` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 5, .after = -1, .complete = TRUE),
-      `WMSD5` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 6, .after = -1, .complete = TRUE),
-      `WMSD6` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 7, .after = -1, .complete = TRUE),				 
-      `PMA2` = slider::slide_dbl(Power, mean,
-                                 .before = 3, .after = -1, .complete = TRUE),
-      `PMA3` = slider::slide_dbl(Power, mean,
-                                 .before = 4, .after = -1, .complete = TRUE),
-      `PMA4` = slider::slide_dbl(Power, mean,
-                                 .before = 5, .after = -1, .complete = TRUE),
-      `PMA5` = slider::slide_dbl(Power, mean,
-                                 .before = 6, .after = -1, .complete = TRUE),
-      `PMA6` = slider::slide_dbl(Power, mean,
-                                 .before = 7, .after = -1, .complete = TRUE),					
-      `PMSD2` = slider::slide_dbl(Power, sd,
-                                  .before = 3, .after = -1, .complete = TRUE),
-      `PMSD3` = slider::slide_dbl(Power, sd,
-                                  .before = 4, .after = -1, .complete = TRUE),
-      `PMSD4` = slider::slide_dbl(Power, sd,
-                                  .before = 5, .after = -1, .complete = TRUE),
-      `PMSD5` = slider::slide_dbl(Power, sd,
-                                  .before = 6, .after = -1, .complete = TRUE),
-      `PMSD6` = slider::slide_dbl(Power, sd,
-                                  .before = 7, .after = -1, .complete = TRUE),
-      `lag_wind1` = lag(Wind_Speed, 1),
-      `lag_wind2` = lag(Wind_Speed, 2),
-      `lag_wind3` = lag(Wind_Speed, 3),
-      `lag_wind4` = lag(Wind_Speed, 4),
-      `lag_wind5` = lag(Wind_Speed, 5),
-      `lag_wind6` = lag(Wind_Speed, 6),
-      `lag_power1` = lag(Power, 1),
-      `lag_power2` = lag(Power, 2),
-      `lag_power3` = lag(Power, 3),
-      `lag_power4` = lag(Power, 4),
-      `lag_power5` = lag(Power, 5),
-      `lag_power6` = lag(Power, 6),
-      `is_q1` = as.integer(quarter(Time)==1),
-      `is_q2` = as.integer(quarter(Time)==2),
-      `is_q3` = as.integer(quarter(Time)==3),
-      `is_00` = as.integer(hour(Time) == 0),
-      `is_01` = as.integer(hour(Time) == 1),
-      `is_02` = as.integer(hour(Time) == 2),
-      `is_03` = as.integer(hour(Time) == 3),
-      `is_04` = as.integer(hour(Time) == 4),
-      `is_05` = as.integer(hour(Time) == 5),
-      `is_06` = as.integer(hour(Time) == 6),
-      `is_07` = as.integer(hour(Time) == 7),
-      `is_08` = as.integer(hour(Time) == 8),
-      `is_09` = as.integer(hour(Time) == 9),
-      `is_10` = as.integer(hour(Time) == 10),
-      `is_11` = as.integer(hour(Time) == 11),
-      `is_12` = as.integer(hour(Time) == 12),
-      `is_13` = as.integer(hour(Time) == 13),
-      `is_14` = as.integer(hour(Time) == 14),
-      `is_15` = as.integer(hour(Time) == 15),
-      `is_16` = as.integer(hour(Time) == 16),
-      `is_17` = as.integer(hour(Time) == 17),
-      `is_18` = as.integer(hour(Time) == 18),
-      `is_19` = as.integer(hour(Time) == 19),
-      `is_20` = as.integer(hour(Time) == 20),
-      `is_21` = as.integer(hour(Time) == 21),
-      `is_22` = as.integer(hour(Time) == 22)
-    )
-  
+
   # forecast with new data
   fc_accuracy <- fc_accuracy %>%
     bind_rows(fit_total %>%
-    forecast(new_data = min10_tr_test %>% 
-               group_by(Group, Subgroup) %>% 
-               slice_tail(n = 1)) %>% 
+    forecast(new_data = min10 %>%
+               group_by(Group, Subgroup) %>%
+               slice(n = i+1)) %>%
     accuracy(min10_power) %>% mutate(.id = i))
-  
+
+  gc()
   return(fc_accuracy)
 }
 stopCluster(cl)
@@ -527,108 +488,106 @@ min20 <- min20_power
 # %>%  filter_index("2021-06-30")
 
 # compute number of entries
-N = nrow(min20_power)/n_keys(min20_power)  
+N = nrow(min20_power)/n_keys(min20_power)
 
 # initialize accuracy tibble
 fc20_accuracy <- NULL;
 
+# compute features on data set
+min20 <- min20 %>% mutate(
+  `WMA2` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 3, .after = -1, .complete = TRUE),
+  `WMA3` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 4, .after = -1, .complete = TRUE),
+  `WMA4` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 5, .after = -1, .complete = TRUE),
+  `WMA5` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 6, .after = -1, .complete = TRUE),
+  `WMA6` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 7, .after = -1, .complete = TRUE),
+  `WMSD2` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 3, .after = -1, .complete = TRUE),
+  `WMSD3` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 4, .after = -1, .complete = TRUE),
+  `WMSD4` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 5, .after = -1, .complete = TRUE),
+  `WMSD5` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 6, .after = -1, .complete = TRUE),
+  `WMSD6` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 7, .after = -1, .complete = TRUE),
+  `PMA2` = slider::slide_dbl(Power, mean,
+                             .before = 3, .after = -1, .complete = TRUE),
+  `PMA3` = slider::slide_dbl(Power, mean,
+                             .before = 4, .after = -1, .complete = TRUE),
+  `PMA4` = slider::slide_dbl(Power, mean,
+                             .before = 5, .after = -1, .complete = TRUE),
+  `PMA5` = slider::slide_dbl(Power, mean,
+                             .before = 6, .after = -1, .complete = TRUE),
+  `PMA6` = slider::slide_dbl(Power, mean,
+                             .before = 7, .after = -1, .complete = TRUE),
+  `PMSD2` = slider::slide_dbl(Power, sd,
+                              .before = 3, .after = -1, .complete = TRUE),
+  `PMSD3` = slider::slide_dbl(Power, sd,
+                              .before = 4, .after = -1, .complete = TRUE),
+  `PMSD4` = slider::slide_dbl(Power, sd,
+                              .before = 5, .after = -1, .complete = TRUE),
+  `PMSD5` = slider::slide_dbl(Power, sd,
+                              .before = 6, .after = -1, .complete = TRUE),
+  `PMSD6` = slider::slide_dbl(Power, sd,
+                              .before = 7, .after = -1, .complete = TRUE),
+  `lag_wind1` = lag(Wind_Speed, 1),
+  `lag_wind2` = lag(Wind_Speed, 2),
+  `lag_wind3` = lag(Wind_Speed, 3),
+  `lag_wind4` = lag(Wind_Speed, 4),
+  `lag_wind5` = lag(Wind_Speed, 5),
+  `lag_wind6` = lag(Wind_Speed, 6),
+  `lag_power1` = lag(Power, 1),
+  `lag_power2` = lag(Power, 2),
+  `lag_power3` = lag(Power, 3),
+  `lag_power4` = lag(Power, 4),
+  `lag_power5` = lag(Power, 5),
+  `lag_power6` = lag(Power, 6),
+  `is_q1` = as.integer(quarter(Time)==1),
+  `is_q2` = as.integer(quarter(Time)==2),
+  `is_q3` = as.integer(quarter(Time)==3),
+  `is_00` = as.integer(hour(Time) == 0),
+  `is_01` = as.integer(hour(Time) == 1),
+  `is_02` = as.integer(hour(Time) == 2),
+  `is_03` = as.integer(hour(Time) == 3),
+  `is_04` = as.integer(hour(Time) == 4),
+  `is_05` = as.integer(hour(Time) == 5),
+  `is_06` = as.integer(hour(Time) == 6),
+  `is_07` = as.integer(hour(Time) == 7),
+  `is_08` = as.integer(hour(Time) == 8),
+  `is_09` = as.integer(hour(Time) == 9),
+  `is_10` = as.integer(hour(Time) == 10),
+  `is_11` = as.integer(hour(Time) == 11),
+  `is_12` = as.integer(hour(Time) == 12),
+  `is_13` = as.integer(hour(Time) == 13),
+  `is_14` = as.integer(hour(Time) == 14),
+  `is_15` = as.integer(hour(Time) == 15),
+  `is_16` = as.integer(hour(Time) == 16),
+  `is_17` = as.integer(hour(Time) == 17),
+  `is_18` = as.integer(hour(Time) == 18),
+  `is_19` = as.integer(hour(Time) == 19),
+  `is_20` = as.integer(hour(Time) == 20),
+  `is_21` = as.integer(hour(Time) == 21),
+  `is_22` = as.integer(hour(Time) == 22)
+)
+
 # set up parallelisation
-registerDoParallel(cl <- makeCluster(15))
+registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
 fc20_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
-  # take training set from elements 1 up to i
-  min20_tr <- min20 %>%
-    slice_head(n = i)
-  
+
   # initialize accuracy tibble
   fc_accuracy <- NULL;
-  
-  # compute features on data set
-  min20_tr <- min20_tr %>% mutate(
-    `WMA2` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 3, .after = -1, .complete = TRUE),
-    `WMA3` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 4, .after = -1, .complete = TRUE),
-    `WMA4` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 5, .after = -1, .complete = TRUE),
-    `WMA5` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 6, .after = -1, .complete = TRUE),
-    `WMA6` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 7, .after = -1, .complete = TRUE),
-    `WMSD2` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 3, .after = -1, .complete = TRUE),
-    `WMSD3` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 4, .after = -1, .complete = TRUE),
-    `WMSD4` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 5, .after = -1, .complete = TRUE),
-    `WMSD5` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 6, .after = -1, .complete = TRUE),
-    `WMSD6` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 7, .after = -1, .complete = TRUE),				 
-    `PMA2` = slider::slide_dbl(Power, mean,
-                               .before = 3, .after = -1, .complete = TRUE),
-    `PMA3` = slider::slide_dbl(Power, mean,
-                               .before = 4, .after = -1, .complete = TRUE),
-    `PMA4` = slider::slide_dbl(Power, mean,
-                               .before = 5, .after = -1, .complete = TRUE),
-    `PMA5` = slider::slide_dbl(Power, mean,
-                               .before = 6, .after = -1, .complete = TRUE),
-    `PMA6` = slider::slide_dbl(Power, mean,
-                               .before = 7, .after = -1, .complete = TRUE),					
-    `PMSD2` = slider::slide_dbl(Power, sd,
-                                .before = 3, .after = -1, .complete = TRUE),
-    `PMSD3` = slider::slide_dbl(Power, sd,
-                                .before = 4, .after = -1, .complete = TRUE),
-    `PMSD4` = slider::slide_dbl(Power, sd,
-                                .before = 5, .after = -1, .complete = TRUE),
-    `PMSD5` = slider::slide_dbl(Power, sd,
-                                .before = 6, .after = -1, .complete = TRUE),
-    `PMSD6` = slider::slide_dbl(Power, sd,
-                                .before = 7, .after = -1, .complete = TRUE),
-    `lag_wind1` = lag(Wind_Speed, 1),
-    `lag_wind2` = lag(Wind_Speed, 2),
-    `lag_wind3` = lag(Wind_Speed, 3),
-    `lag_wind4` = lag(Wind_Speed, 4),
-    `lag_wind5` = lag(Wind_Speed, 5),
-    `lag_wind6` = lag(Wind_Speed, 6),
-    `lag_power1` = lag(Power, 1),
-    `lag_power2` = lag(Power, 2),
-    `lag_power3` = lag(Power, 3),
-    `lag_power4` = lag(Power, 4),
-    `lag_power5` = lag(Power, 5),
-    `lag_power6` = lag(Power, 6),
-    `is_q1` = as.integer(quarter(Time)==1),
-    `is_q2` = as.integer(quarter(Time)==2),
-    `is_q3` = as.integer(quarter(Time)==3),
-    `is_00` = as.integer(hour(Time) == 0),
-    `is_01` = as.integer(hour(Time) == 1),
-    `is_02` = as.integer(hour(Time) == 2),
-    `is_03` = as.integer(hour(Time) == 3),
-    `is_04` = as.integer(hour(Time) == 4),
-    `is_05` = as.integer(hour(Time) == 5),
-    `is_06` = as.integer(hour(Time) == 6),
-    `is_07` = as.integer(hour(Time) == 7),
-    `is_08` = as.integer(hour(Time) == 8),
-    `is_09` = as.integer(hour(Time) == 9),
-    `is_10` = as.integer(hour(Time) == 10),
-    `is_11` = as.integer(hour(Time) == 11),
-    `is_12` = as.integer(hour(Time) == 12),
-    `is_13` = as.integer(hour(Time) == 13),
-    `is_14` = as.integer(hour(Time) == 14),
-    `is_15` = as.integer(hour(Time) == 15),
-    `is_16` = as.integer(hour(Time) == 16),
-    `is_17` = as.integer(hour(Time) == 17),
-    `is_18` = as.integer(hour(Time) == 18),
-    `is_19` = as.integer(hour(Time) == 19),
-    `is_20` = as.integer(hour(Time) == 20),
-    `is_21` = as.integer(hour(Time) == 21),
-    `is_22` = as.integer(hour(Time) == 22)
-  )
-  
+
   # compute fit
-  fit_total <- min20_tr %>%
+  fit_total <- min20 %>%
+    slice_head(n = i) %>%
     model(mod1 = TSLM(Power ~ WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
     reconcile(
       bu_mod1 = bottom_up(mod1),
@@ -637,98 +596,15 @@ fc20_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine 
       ols_mod1 = min_trace(mod1, method = "ols"),
       mint_mod1 = min_trace(mod1, method = "mint_shrink")
     )
-  
-  # add new data for forecasting 1 step ahead
-  min20_tr_test <- append_row(min20_tr, 1, keep_all = TRUE) %>% 
-    mutate(
-      `WMA2` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 3, .after = -1, .complete = TRUE),
-      `WMA3` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 4, .after = -1, .complete = TRUE),
-      `WMA4` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 5, .after = -1, .complete = TRUE),
-      `WMA5` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 6, .after = -1, .complete = TRUE),
-      `WMA6` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 7, .after = -1, .complete = TRUE),
-      `WMSD2` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 3, .after = -1, .complete = TRUE),
-      `WMSD3` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 4, .after = -1, .complete = TRUE),
-      `WMSD4` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 5, .after = -1, .complete = TRUE),
-      `WMSD5` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 6, .after = -1, .complete = TRUE),
-      `WMSD6` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 7, .after = -1, .complete = TRUE),				 
-      `PMA2` = slider::slide_dbl(Power, mean,
-                                 .before = 3, .after = -1, .complete = TRUE),
-      `PMA3` = slider::slide_dbl(Power, mean,
-                                 .before = 4, .after = -1, .complete = TRUE),
-      `PMA4` = slider::slide_dbl(Power, mean,
-                                 .before = 5, .after = -1, .complete = TRUE),
-      `PMA5` = slider::slide_dbl(Power, mean,
-                                 .before = 6, .after = -1, .complete = TRUE),
-      `PMA6` = slider::slide_dbl(Power, mean,
-                                 .before = 7, .after = -1, .complete = TRUE),					
-      `PMSD2` = slider::slide_dbl(Power, sd,
-                                  .before = 3, .after = -1, .complete = TRUE),
-      `PMSD3` = slider::slide_dbl(Power, sd,
-                                  .before = 4, .after = -1, .complete = TRUE),
-      `PMSD4` = slider::slide_dbl(Power, sd,
-                                  .before = 5, .after = -1, .complete = TRUE),
-      `PMSD5` = slider::slide_dbl(Power, sd,
-                                  .before = 6, .after = -1, .complete = TRUE),
-      `PMSD6` = slider::slide_dbl(Power, sd,
-                                  .before = 7, .after = -1, .complete = TRUE),
-      `lag_wind1` = lag(Wind_Speed, 1),
-      `lag_wind2` = lag(Wind_Speed, 2),
-      `lag_wind3` = lag(Wind_Speed, 3),
-      `lag_wind4` = lag(Wind_Speed, 4),
-      `lag_wind5` = lag(Wind_Speed, 5),
-      `lag_wind6` = lag(Wind_Speed, 6),
-      `lag_power1` = lag(Power, 1),
-      `lag_power2` = lag(Power, 2),
-      `lag_power3` = lag(Power, 3),
-      `lag_power4` = lag(Power, 4),
-      `lag_power5` = lag(Power, 5),
-      `lag_power6` = lag(Power, 6),
-      `is_q1` = as.integer(quarter(Time)==1),
-      `is_q2` = as.integer(quarter(Time)==2),
-      `is_q3` = as.integer(quarter(Time)==3),
-      `is_00` = as.integer(hour(Time) == 0),
-      `is_01` = as.integer(hour(Time) == 1),
-      `is_02` = as.integer(hour(Time) == 2),
-      `is_03` = as.integer(hour(Time) == 3),
-      `is_04` = as.integer(hour(Time) == 4),
-      `is_05` = as.integer(hour(Time) == 5),
-      `is_06` = as.integer(hour(Time) == 6),
-      `is_07` = as.integer(hour(Time) == 7),
-      `is_08` = as.integer(hour(Time) == 8),
-      `is_09` = as.integer(hour(Time) == 9),
-      `is_10` = as.integer(hour(Time) == 10),
-      `is_11` = as.integer(hour(Time) == 11),
-      `is_12` = as.integer(hour(Time) == 12),
-      `is_13` = as.integer(hour(Time) == 13),
-      `is_14` = as.integer(hour(Time) == 14),
-      `is_15` = as.integer(hour(Time) == 15),
-      `is_16` = as.integer(hour(Time) == 16),
-      `is_17` = as.integer(hour(Time) == 17),
-      `is_18` = as.integer(hour(Time) == 18),
-      `is_19` = as.integer(hour(Time) == 19),
-      `is_20` = as.integer(hour(Time) == 20),
-      `is_21` = as.integer(hour(Time) == 21),
-      `is_22` = as.integer(hour(Time) == 22)
-    )
-  
+
   # forecast with new data
   fc_accuracy <- fc_accuracy %>%
     bind_rows(fit_total %>%
-                forecast(new_data = min20_tr_test %>% 
-                           group_by(Group, Subgroup) %>% 
-                           slice_tail(n = 1)) %>% 
+                forecast(new_data = min20 %>%
+                           group_by(Group, Subgroup) %>%
+                           slice(n = i+1)) %>%
                 accuracy(min20_power) %>% mutate(.id = i))
-  
+
   return(fc_accuracy)
 }
 stopCluster(cl)
@@ -741,108 +617,105 @@ min30 <- min30_power
 # %>%  filter_index("2021-06-30")
 
 # compute number of entries
-N = nrow(min30_power)/n_keys(min30_power)  
+N = nrow(min30_power)/n_keys(min30_power)
 
 # initialize accuracy tibble
 fc30_accuracy <- NULL;
 
+# compute features on data set
+min30 <- min30 %>% mutate(
+  `WMA2` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 3, .after = -1, .complete = TRUE),
+  `WMA3` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 4, .after = -1, .complete = TRUE),
+  `WMA4` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 5, .after = -1, .complete = TRUE),
+  `WMA5` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 6, .after = -1, .complete = TRUE),
+  `WMA6` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 7, .after = -1, .complete = TRUE),
+  `WMSD2` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 3, .after = -1, .complete = TRUE),
+  `WMSD3` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 4, .after = -1, .complete = TRUE),
+  `WMSD4` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 5, .after = -1, .complete = TRUE),
+  `WMSD5` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 6, .after = -1, .complete = TRUE),
+  `WMSD6` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 7, .after = -1, .complete = TRUE),
+  `PMA2` = slider::slide_dbl(Power, mean,
+                             .before = 3, .after = -1, .complete = TRUE),
+  `PMA3` = slider::slide_dbl(Power, mean,
+                             .before = 4, .after = -1, .complete = TRUE),
+  `PMA4` = slider::slide_dbl(Power, mean,
+                             .before = 5, .after = -1, .complete = TRUE),
+  `PMA5` = slider::slide_dbl(Power, mean,
+                             .before = 6, .after = -1, .complete = TRUE),
+  `PMA6` = slider::slide_dbl(Power, mean,
+                             .before = 7, .after = -1, .complete = TRUE),
+  `PMSD2` = slider::slide_dbl(Power, sd,
+                              .before = 3, .after = -1, .complete = TRUE),
+  `PMSD3` = slider::slide_dbl(Power, sd,
+                              .before = 4, .after = -1, .complete = TRUE),
+  `PMSD4` = slider::slide_dbl(Power, sd,
+                              .before = 5, .after = -1, .complete = TRUE),
+  `PMSD5` = slider::slide_dbl(Power, sd,
+                              .before = 6, .after = -1, .complete = TRUE),
+  `PMSD6` = slider::slide_dbl(Power, sd,
+                              .before = 7, .after = -1, .complete = TRUE),
+  `lag_wind1` = lag(Wind_Speed, 1),
+  `lag_wind2` = lag(Wind_Speed, 2),
+  `lag_wind3` = lag(Wind_Speed, 3),
+  `lag_wind4` = lag(Wind_Speed, 4),
+  `lag_wind5` = lag(Wind_Speed, 5),
+  `lag_wind6` = lag(Wind_Speed, 6),
+  `lag_power1` = lag(Power, 1),
+  `lag_power2` = lag(Power, 2),
+  `lag_power3` = lag(Power, 3),
+  `lag_power4` = lag(Power, 4),
+  `lag_power5` = lag(Power, 5),
+  `lag_power6` = lag(Power, 6),
+  `is_q1` = as.integer(quarter(Time)==1),
+  `is_q2` = as.integer(quarter(Time)==2),
+  `is_q3` = as.integer(quarter(Time)==3),
+  `is_00` = as.integer(hour(Time) == 0),
+  `is_01` = as.integer(hour(Time) == 1),
+  `is_02` = as.integer(hour(Time) == 2),
+  `is_03` = as.integer(hour(Time) == 3),
+  `is_04` = as.integer(hour(Time) == 4),
+  `is_05` = as.integer(hour(Time) == 5),
+  `is_06` = as.integer(hour(Time) == 6),
+  `is_07` = as.integer(hour(Time) == 7),
+  `is_08` = as.integer(hour(Time) == 8),
+  `is_09` = as.integer(hour(Time) == 9),
+  `is_10` = as.integer(hour(Time) == 10),
+  `is_11` = as.integer(hour(Time) == 11),
+  `is_12` = as.integer(hour(Time) == 12),
+  `is_13` = as.integer(hour(Time) == 13),
+  `is_14` = as.integer(hour(Time) == 14),
+  `is_15` = as.integer(hour(Time) == 15),
+  `is_16` = as.integer(hour(Time) == 16),
+  `is_17` = as.integer(hour(Time) == 17),
+  `is_18` = as.integer(hour(Time) == 18),
+  `is_19` = as.integer(hour(Time) == 19),
+  `is_20` = as.integer(hour(Time) == 20),
+  `is_21` = as.integer(hour(Time) == 21),
+  `is_22` = as.integer(hour(Time) == 22)
+)
+
 # set up parallelisation
-registerDoParallel(cl <- makeCluster(15))
+registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
 fc30_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
-  # take training set from elements 1 up to i
-  min30_tr <- min30 %>%
-    slice_head(n = i)
-  
   # initialize accuracy tibble
   fc_accuracy <- NULL;
-  
-  # compute features on data set
-  min30_tr <- min30_tr %>% mutate(
-    `WMA2` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 3, .after = -1, .complete = TRUE),
-    `WMA3` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 4, .after = -1, .complete = TRUE),
-    `WMA4` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 5, .after = -1, .complete = TRUE),
-    `WMA5` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 6, .after = -1, .complete = TRUE),
-    `WMA6` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 7, .after = -1, .complete = TRUE),
-    `WMSD2` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 3, .after = -1, .complete = TRUE),
-    `WMSD3` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 4, .after = -1, .complete = TRUE),
-    `WMSD4` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 5, .after = -1, .complete = TRUE),
-    `WMSD5` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 6, .after = -1, .complete = TRUE),
-    `WMSD6` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 7, .after = -1, .complete = TRUE),				 
-    `PMA2` = slider::slide_dbl(Power, mean,
-                               .before = 3, .after = -1, .complete = TRUE),
-    `PMA3` = slider::slide_dbl(Power, mean,
-                               .before = 4, .after = -1, .complete = TRUE),
-    `PMA4` = slider::slide_dbl(Power, mean,
-                               .before = 5, .after = -1, .complete = TRUE),
-    `PMA5` = slider::slide_dbl(Power, mean,
-                               .before = 6, .after = -1, .complete = TRUE),
-    `PMA6` = slider::slide_dbl(Power, mean,
-                               .before = 7, .after = -1, .complete = TRUE),					
-    `PMSD2` = slider::slide_dbl(Power, sd,
-                                .before = 3, .after = -1, .complete = TRUE),
-    `PMSD3` = slider::slide_dbl(Power, sd,
-                                .before = 4, .after = -1, .complete = TRUE),
-    `PMSD4` = slider::slide_dbl(Power, sd,
-                                .before = 5, .after = -1, .complete = TRUE),
-    `PMSD5` = slider::slide_dbl(Power, sd,
-                                .before = 6, .after = -1, .complete = TRUE),
-    `PMSD6` = slider::slide_dbl(Power, sd,
-                                .before = 7, .after = -1, .complete = TRUE),
-    `lag_wind1` = lag(Wind_Speed, 1),
-    `lag_wind2` = lag(Wind_Speed, 2),
-    `lag_wind3` = lag(Wind_Speed, 3),
-    `lag_wind4` = lag(Wind_Speed, 4),
-    `lag_wind5` = lag(Wind_Speed, 5),
-    `lag_wind6` = lag(Wind_Speed, 6),
-    `lag_power1` = lag(Power, 1),
-    `lag_power2` = lag(Power, 2),
-    `lag_power3` = lag(Power, 3),
-    `lag_power4` = lag(Power, 4),
-    `lag_power5` = lag(Power, 5),
-    `lag_power6` = lag(Power, 6),
-    `is_q1` = as.integer(quarter(Time)==1),
-    `is_q2` = as.integer(quarter(Time)==2),
-    `is_q3` = as.integer(quarter(Time)==3),
-    `is_00` = as.integer(hour(Time) == 0),
-    `is_01` = as.integer(hour(Time) == 1),
-    `is_02` = as.integer(hour(Time) == 2),
-    `is_03` = as.integer(hour(Time) == 3),
-    `is_04` = as.integer(hour(Time) == 4),
-    `is_05` = as.integer(hour(Time) == 5),
-    `is_06` = as.integer(hour(Time) == 6),
-    `is_07` = as.integer(hour(Time) == 7),
-    `is_08` = as.integer(hour(Time) == 8),
-    `is_09` = as.integer(hour(Time) == 9),
-    `is_10` = as.integer(hour(Time) == 10),
-    `is_11` = as.integer(hour(Time) == 11),
-    `is_12` = as.integer(hour(Time) == 12),
-    `is_13` = as.integer(hour(Time) == 13),
-    `is_14` = as.integer(hour(Time) == 14),
-    `is_15` = as.integer(hour(Time) == 15),
-    `is_16` = as.integer(hour(Time) == 16),
-    `is_17` = as.integer(hour(Time) == 17),
-    `is_18` = as.integer(hour(Time) == 18),
-    `is_19` = as.integer(hour(Time) == 19),
-    `is_20` = as.integer(hour(Time) == 20),
-    `is_21` = as.integer(hour(Time) == 21),
-    `is_22` = as.integer(hour(Time) == 22)
-  )
-  
+
   # compute fit
-  fit_total <- min30_tr %>%
+  fit_total <- min30 %>%
+    slice_head(n = i) %>%
     model(mod1 = TSLM(Power ~ WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
     reconcile(
       bu_mod1 = bottom_up(mod1),
@@ -851,98 +724,15 @@ fc30_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine 
       ols_mod1 = min_trace(mod1, method = "ols"),
       mint_mod1 = min_trace(mod1, method = "mint_shrink")
     )
-  
-  # add new data for forecasting 1 step ahead
-  min30_tr_test <- append_row(min30_tr, 1, keep_all = TRUE) %>% 
-    mutate(
-      `WMA2` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 3, .after = -1, .complete = TRUE),
-      `WMA3` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 4, .after = -1, .complete = TRUE),
-      `WMA4` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 5, .after = -1, .complete = TRUE),
-      `WMA5` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 6, .after = -1, .complete = TRUE),
-      `WMA6` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 7, .after = -1, .complete = TRUE),
-      `WMSD2` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 3, .after = -1, .complete = TRUE),
-      `WMSD3` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 4, .after = -1, .complete = TRUE),
-      `WMSD4` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 5, .after = -1, .complete = TRUE),
-      `WMSD5` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 6, .after = -1, .complete = TRUE),
-      `WMSD6` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 7, .after = -1, .complete = TRUE),				 
-      `PMA2` = slider::slide_dbl(Power, mean,
-                                 .before = 3, .after = -1, .complete = TRUE),
-      `PMA3` = slider::slide_dbl(Power, mean,
-                                 .before = 4, .after = -1, .complete = TRUE),
-      `PMA4` = slider::slide_dbl(Power, mean,
-                                 .before = 5, .after = -1, .complete = TRUE),
-      `PMA5` = slider::slide_dbl(Power, mean,
-                                 .before = 6, .after = -1, .complete = TRUE),
-      `PMA6` = slider::slide_dbl(Power, mean,
-                                 .before = 7, .after = -1, .complete = TRUE),					
-      `PMSD2` = slider::slide_dbl(Power, sd,
-                                  .before = 3, .after = -1, .complete = TRUE),
-      `PMSD3` = slider::slide_dbl(Power, sd,
-                                  .before = 4, .after = -1, .complete = TRUE),
-      `PMSD4` = slider::slide_dbl(Power, sd,
-                                  .before = 5, .after = -1, .complete = TRUE),
-      `PMSD5` = slider::slide_dbl(Power, sd,
-                                  .before = 6, .after = -1, .complete = TRUE),
-      `PMSD6` = slider::slide_dbl(Power, sd,
-                                  .before = 7, .after = -1, .complete = TRUE),
-      `lag_wind1` = lag(Wind_Speed, 1),
-      `lag_wind2` = lag(Wind_Speed, 2),
-      `lag_wind3` = lag(Wind_Speed, 3),
-      `lag_wind4` = lag(Wind_Speed, 4),
-      `lag_wind5` = lag(Wind_Speed, 5),
-      `lag_wind6` = lag(Wind_Speed, 6),
-      `lag_power1` = lag(Power, 1),
-      `lag_power2` = lag(Power, 2),
-      `lag_power3` = lag(Power, 3),
-      `lag_power4` = lag(Power, 4),
-      `lag_power5` = lag(Power, 5),
-      `lag_power6` = lag(Power, 6),
-      `is_q1` = as.integer(quarter(Time)==1),
-      `is_q2` = as.integer(quarter(Time)==2),
-      `is_q3` = as.integer(quarter(Time)==3),
-      `is_00` = as.integer(hour(Time) == 0),
-      `is_01` = as.integer(hour(Time) == 1),
-      `is_02` = as.integer(hour(Time) == 2),
-      `is_03` = as.integer(hour(Time) == 3),
-      `is_04` = as.integer(hour(Time) == 4),
-      `is_05` = as.integer(hour(Time) == 5),
-      `is_06` = as.integer(hour(Time) == 6),
-      `is_07` = as.integer(hour(Time) == 7),
-      `is_08` = as.integer(hour(Time) == 8),
-      `is_09` = as.integer(hour(Time) == 9),
-      `is_10` = as.integer(hour(Time) == 10),
-      `is_11` = as.integer(hour(Time) == 11),
-      `is_12` = as.integer(hour(Time) == 12),
-      `is_13` = as.integer(hour(Time) == 13),
-      `is_14` = as.integer(hour(Time) == 14),
-      `is_15` = as.integer(hour(Time) == 15),
-      `is_16` = as.integer(hour(Time) == 16),
-      `is_17` = as.integer(hour(Time) == 17),
-      `is_18` = as.integer(hour(Time) == 18),
-      `is_19` = as.integer(hour(Time) == 19),
-      `is_20` = as.integer(hour(Time) == 20),
-      `is_21` = as.integer(hour(Time) == 21),
-      `is_22` = as.integer(hour(Time) == 22)
-    )
-  
+
   # forecast with new data
   fc_accuracy <- fc_accuracy %>%
     bind_rows(fit_total %>%
-                forecast(new_data = min30_tr_test %>% 
-                           group_by(Group, Subgroup) %>% 
-                           slice_tail(n = 1)) %>% 
+                forecast(new_data = min30 %>%
+                           group_by(Group, Subgroup) %>%
+                           slice(n = i+1)) %>%
                 accuracy(min30_power) %>% mutate(.id = i))
-  
+
   return(fc_accuracy)
 }
 stopCluster(cl)
@@ -954,108 +744,105 @@ hr1 <- hr1_power
 # %>%  filter_index("2021-06-30")
 
 # compute number of entries
-N = nrow(hr1_power)/n_keys(hr1_power)  
+N = nrow(hr1_power)/n_keys(hr1_power)
 
 # initialize accuracy tibble
 fc1_accuracy <- NULL;
 
+# compute features on data set
+hr1 <- hr1 %>% mutate(
+  `WMA2` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 3, .after = -1, .complete = TRUE),
+  `WMA3` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 4, .after = -1, .complete = TRUE),
+  `WMA4` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 5, .after = -1, .complete = TRUE),
+  `WMA5` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 6, .after = -1, .complete = TRUE),
+  `WMA6` = slider::slide_dbl(Wind_Speed, mean,
+                             .before = 7, .after = -1, .complete = TRUE),
+  `WMSD2` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 3, .after = -1, .complete = TRUE),
+  `WMSD3` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 4, .after = -1, .complete = TRUE),
+  `WMSD4` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 5, .after = -1, .complete = TRUE),
+  `WMSD5` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 6, .after = -1, .complete = TRUE),
+  `WMSD6` = slider::slide_dbl(Wind_Speed, sd,
+                              .before = 7, .after = -1, .complete = TRUE),
+  `PMA2` = slider::slide_dbl(Power, mean,
+                             .before = 3, .after = -1, .complete = TRUE),
+  `PMA3` = slider::slide_dbl(Power, mean,
+                             .before = 4, .after = -1, .complete = TRUE),
+  `PMA4` = slider::slide_dbl(Power, mean,
+                             .before = 5, .after = -1, .complete = TRUE),
+  `PMA5` = slider::slide_dbl(Power, mean,
+                             .before = 6, .after = -1, .complete = TRUE),
+  `PMA6` = slider::slide_dbl(Power, mean,
+                             .before = 7, .after = -1, .complete = TRUE),
+  `PMSD2` = slider::slide_dbl(Power, sd,
+                              .before = 3, .after = -1, .complete = TRUE),
+  `PMSD3` = slider::slide_dbl(Power, sd,
+                              .before = 4, .after = -1, .complete = TRUE),
+  `PMSD4` = slider::slide_dbl(Power, sd,
+                              .before = 5, .after = -1, .complete = TRUE),
+  `PMSD5` = slider::slide_dbl(Power, sd,
+                              .before = 6, .after = -1, .complete = TRUE),
+  `PMSD6` = slider::slide_dbl(Power, sd,
+                              .before = 7, .after = -1, .complete = TRUE),
+  `lag_wind1` = lag(Wind_Speed, 1),
+  `lag_wind2` = lag(Wind_Speed, 2),
+  `lag_wind3` = lag(Wind_Speed, 3),
+  `lag_wind4` = lag(Wind_Speed, 4),
+  `lag_wind5` = lag(Wind_Speed, 5),
+  `lag_wind6` = lag(Wind_Speed, 6),
+  `lag_power1` = lag(Power, 1),
+  `lag_power2` = lag(Power, 2),
+  `lag_power3` = lag(Power, 3),
+  `lag_power4` = lag(Power, 4),
+  `lag_power5` = lag(Power, 5),
+  `lag_power6` = lag(Power, 6),
+  `is_q1` = as.integer(quarter(Time)==1),
+  `is_q2` = as.integer(quarter(Time)==2),
+  `is_q3` = as.integer(quarter(Time)==3),
+  `is_00` = as.integer(hour(Time) == 0),
+  `is_01` = as.integer(hour(Time) == 1),
+  `is_02` = as.integer(hour(Time) == 2),
+  `is_03` = as.integer(hour(Time) == 3),
+  `is_04` = as.integer(hour(Time) == 4),
+  `is_05` = as.integer(hour(Time) == 5),
+  `is_06` = as.integer(hour(Time) == 6),
+  `is_07` = as.integer(hour(Time) == 7),
+  `is_08` = as.integer(hour(Time) == 8),
+  `is_09` = as.integer(hour(Time) == 9),
+  `is_10` = as.integer(hour(Time) == 10),
+  `is_11` = as.integer(hour(Time) == 11),
+  `is_12` = as.integer(hour(Time) == 12),
+  `is_13` = as.integer(hour(Time) == 13),
+  `is_14` = as.integer(hour(Time) == 14),
+  `is_15` = as.integer(hour(Time) == 15),
+  `is_16` = as.integer(hour(Time) == 16),
+  `is_17` = as.integer(hour(Time) == 17),
+  `is_18` = as.integer(hour(Time) == 18),
+  `is_19` = as.integer(hour(Time) == 19),
+  `is_20` = as.integer(hour(Time) == 20),
+  `is_21` = as.integer(hour(Time) == 21),
+  `is_22` = as.integer(hour(Time) == 22)
+)
+
 # set up parallelisation
-registerDoParallel(cl <- makeCluster(15))
+registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
 fc1_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
-  # take training set from elements 1 up to i
-  hr1_tr <- hr1 %>%
-    slice_head(n = i)
-  
   # initialize accuracy tibble
   fc_accuracy <- NULL;
-  
-  # compute features on data set
-  hr1_tr <- hr1_tr %>% mutate(
-    `WMA2` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 3, .after = -1, .complete = TRUE),
-    `WMA3` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 4, .after = -1, .complete = TRUE),
-    `WMA4` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 5, .after = -1, .complete = TRUE),
-    `WMA5` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 6, .after = -1, .complete = TRUE),
-    `WMA6` = slider::slide_dbl(Wind_Speed, mean,
-                               .before = 7, .after = -1, .complete = TRUE),
-    `WMSD2` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 3, .after = -1, .complete = TRUE),
-    `WMSD3` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 4, .after = -1, .complete = TRUE),
-    `WMSD4` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 5, .after = -1, .complete = TRUE),
-    `WMSD5` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 6, .after = -1, .complete = TRUE),
-    `WMSD6` = slider::slide_dbl(Wind_Speed, sd,
-                                .before = 7, .after = -1, .complete = TRUE),				 
-    `PMA2` = slider::slide_dbl(Power, mean,
-                               .before = 3, .after = -1, .complete = TRUE),
-    `PMA3` = slider::slide_dbl(Power, mean,
-                               .before = 4, .after = -1, .complete = TRUE),
-    `PMA4` = slider::slide_dbl(Power, mean,
-                               .before = 5, .after = -1, .complete = TRUE),
-    `PMA5` = slider::slide_dbl(Power, mean,
-                               .before = 6, .after = -1, .complete = TRUE),
-    `PMA6` = slider::slide_dbl(Power, mean,
-                               .before = 7, .after = -1, .complete = TRUE),					
-    `PMSD2` = slider::slide_dbl(Power, sd,
-                                .before = 3, .after = -1, .complete = TRUE),
-    `PMSD3` = slider::slide_dbl(Power, sd,
-                                .before = 4, .after = -1, .complete = TRUE),
-    `PMSD4` = slider::slide_dbl(Power, sd,
-                                .before = 5, .after = -1, .complete = TRUE),
-    `PMSD5` = slider::slide_dbl(Power, sd,
-                                .before = 6, .after = -1, .complete = TRUE),
-    `PMSD6` = slider::slide_dbl(Power, sd,
-                                .before = 7, .after = -1, .complete = TRUE),
-    `lag_wind1` = lag(Wind_Speed, 1),
-    `lag_wind2` = lag(Wind_Speed, 2),
-    `lag_wind3` = lag(Wind_Speed, 3),
-    `lag_wind4` = lag(Wind_Speed, 4),
-    `lag_wind5` = lag(Wind_Speed, 5),
-    `lag_wind6` = lag(Wind_Speed, 6),
-    `lag_power1` = lag(Power, 1),
-    `lag_power2` = lag(Power, 2),
-    `lag_power3` = lag(Power, 3),
-    `lag_power4` = lag(Power, 4),
-    `lag_power5` = lag(Power, 5),
-    `lag_power6` = lag(Power, 6),
-    `is_q1` = as.integer(quarter(Time)==1),
-    `is_q2` = as.integer(quarter(Time)==2),
-    `is_q3` = as.integer(quarter(Time)==3),
-    `is_00` = as.integer(hour(Time) == 0),
-    `is_01` = as.integer(hour(Time) == 1),
-    `is_02` = as.integer(hour(Time) == 2),
-    `is_03` = as.integer(hour(Time) == 3),
-    `is_04` = as.integer(hour(Time) == 4),
-    `is_05` = as.integer(hour(Time) == 5),
-    `is_06` = as.integer(hour(Time) == 6),
-    `is_07` = as.integer(hour(Time) == 7),
-    `is_08` = as.integer(hour(Time) == 8),
-    `is_09` = as.integer(hour(Time) == 9),
-    `is_10` = as.integer(hour(Time) == 10),
-    `is_11` = as.integer(hour(Time) == 11),
-    `is_12` = as.integer(hour(Time) == 12),
-    `is_13` = as.integer(hour(Time) == 13),
-    `is_14` = as.integer(hour(Time) == 14),
-    `is_15` = as.integer(hour(Time) == 15),
-    `is_16` = as.integer(hour(Time) == 16),
-    `is_17` = as.integer(hour(Time) == 17),
-    `is_18` = as.integer(hour(Time) == 18),
-    `is_19` = as.integer(hour(Time) == 19),
-    `is_20` = as.integer(hour(Time) == 20),
-    `is_21` = as.integer(hour(Time) == 21),
-    `is_22` = as.integer(hour(Time) == 22)
-  )
-  
+
   # compute fit
-  fit_total <- hr1_tr %>%
+  fit_total <- hr1 %>%
+    slice_head(n = i) %>%
     model(mod1 = TSLM(Power ~ WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
     reconcile(
       bu_mod1 = bottom_up(mod1),
@@ -1064,113 +851,226 @@ fc1_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine =
       ols_mod1 = min_trace(mod1, method = "ols"),
       mint_mod1 = min_trace(mod1, method = "mint_shrink")
     )
-  
-  # add new data for forecasting 1 step ahead
-  hr1_tr_test <- append_row(hr1_tr, 1, keep_all = TRUE) %>% 
-    mutate(
-      `WMA2` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 3, .after = -1, .complete = TRUE),
-      `WMA3` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 4, .after = -1, .complete = TRUE),
-      `WMA4` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 5, .after = -1, .complete = TRUE),
-      `WMA5` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 6, .after = -1, .complete = TRUE),
-      `WMA6` = slider::slide_dbl(Wind_Speed, mean,
-                                 .before = 7, .after = -1, .complete = TRUE),
-      `WMSD2` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 3, .after = -1, .complete = TRUE),
-      `WMSD3` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 4, .after = -1, .complete = TRUE),
-      `WMSD4` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 5, .after = -1, .complete = TRUE),
-      `WMSD5` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 6, .after = -1, .complete = TRUE),
-      `WMSD6` = slider::slide_dbl(Wind_Speed, sd,
-                                  .before = 7, .after = -1, .complete = TRUE),				 
-      `PMA2` = slider::slide_dbl(Power, mean,
-                                 .before = 3, .after = -1, .complete = TRUE),
-      `PMA3` = slider::slide_dbl(Power, mean,
-                                 .before = 4, .after = -1, .complete = TRUE),
-      `PMA4` = slider::slide_dbl(Power, mean,
-                                 .before = 5, .after = -1, .complete = TRUE),
-      `PMA5` = slider::slide_dbl(Power, mean,
-                                 .before = 6, .after = -1, .complete = TRUE),
-      `PMA6` = slider::slide_dbl(Power, mean,
-                                 .before = 7, .after = -1, .complete = TRUE),					
-      `PMSD2` = slider::slide_dbl(Power, sd,
-                                  .before = 3, .after = -1, .complete = TRUE),
-      `PMSD3` = slider::slide_dbl(Power, sd,
-                                  .before = 4, .after = -1, .complete = TRUE),
-      `PMSD4` = slider::slide_dbl(Power, sd,
-                                  .before = 5, .after = -1, .complete = TRUE),
-      `PMSD5` = slider::slide_dbl(Power, sd,
-                                  .before = 6, .after = -1, .complete = TRUE),
-      `PMSD6` = slider::slide_dbl(Power, sd,
-                                  .before = 7, .after = -1, .complete = TRUE),
-      `lag_wind1` = lag(Wind_Speed, 1),
-      `lag_wind2` = lag(Wind_Speed, 2),
-      `lag_wind3` = lag(Wind_Speed, 3),
-      `lag_wind4` = lag(Wind_Speed, 4),
-      `lag_wind5` = lag(Wind_Speed, 5),
-      `lag_wind6` = lag(Wind_Speed, 6),
-      `lag_power1` = lag(Power, 1),
-      `lag_power2` = lag(Power, 2),
-      `lag_power3` = lag(Power, 3),
-      `lag_power4` = lag(Power, 4),
-      `lag_power5` = lag(Power, 5),
-      `lag_power6` = lag(Power, 6),
-      `is_q1` = as.integer(quarter(Time)==1),
-      `is_q2` = as.integer(quarter(Time)==2),
-      `is_q3` = as.integer(quarter(Time)==3),
-      `is_00` = as.integer(hour(Time) == 0),
-      `is_01` = as.integer(hour(Time) == 1),
-      `is_02` = as.integer(hour(Time) == 2),
-      `is_03` = as.integer(hour(Time) == 3),
-      `is_04` = as.integer(hour(Time) == 4),
-      `is_05` = as.integer(hour(Time) == 5),
-      `is_06` = as.integer(hour(Time) == 6),
-      `is_07` = as.integer(hour(Time) == 7),
-      `is_08` = as.integer(hour(Time) == 8),
-      `is_09` = as.integer(hour(Time) == 9),
-      `is_10` = as.integer(hour(Time) == 10),
-      `is_11` = as.integer(hour(Time) == 11),
-      `is_12` = as.integer(hour(Time) == 12),
-      `is_13` = as.integer(hour(Time) == 13),
-      `is_14` = as.integer(hour(Time) == 14),
-      `is_15` = as.integer(hour(Time) == 15),
-      `is_16` = as.integer(hour(Time) == 16),
-      `is_17` = as.integer(hour(Time) == 17),
-      `is_18` = as.integer(hour(Time) == 18),
-      `is_19` = as.integer(hour(Time) == 19),
-      `is_20` = as.integer(hour(Time) == 20),
-      `is_21` = as.integer(hour(Time) == 21),
-      `is_22` = as.integer(hour(Time) == 22)
-    )
-  
+
   # forecast with new data
   fc_accuracy <- fc_accuracy %>%
     bind_rows(fit_total %>%
-                forecast(new_data = hr1_tr_test %>% 
-                           group_by(Group, Subgroup) %>% 
-                           slice_tail(n = 1)) %>% 
+                forecast(new_data = hr1 %>%
+                           group_by(Group, Subgroup) %>%
+                           slice(n = i+1)) %>%
                 accuracy(hr1_power) %>% mutate(.id = i))
-  
+
   return(fc_accuracy)
 }
 stopCluster(cl)
 
+#### Define auxiliary functions for LightGBM regression ####
+to_x <- function(data){
+  return(data %>%
+           ungroup() %>%
+           as_tibble() %>%
+           select(-c(Group, Subgroup, Time, Power, Wind_Speed)) %>%
+           as.matrix())
+}
 
-  
+to_y <- function(data){
+  return(data %>%
+           ungroup() %>%
+           as_tibble() %>%
+           select(Power) %>%
+           as.matrix())
+}
 
-#### Compare benchmark to linear regression - 10 minutely ####
+tuning_para <- function(train_data,test_data, k){
+  dtrain_b3 <- train_data
+  dtest_b3 <- test_data
+  valids_b3 = list(test=dtest_b3)
 
-accuracy_benchmark_error <- fc_benchmark_accuracy %>%
-  group_by(.model, Group, Subgroup)  %>% 
+  model_b3 <- list()
+  perf_b3 <- numeric(nrow(grid_search))
+
+  gc()
+  for (i in 1:nrow(grid_search)) {
+    model_b3[[i]] <- lightgbm::lgb.train(objective = "regression_l1",
+                                         metric = "mae",
+                                         max_depth = grid_search[i, "max_depth"],
+                                         lambda_l1 =  0.1,
+                                         num_leaves= grid_search[i,"num_leaves"],
+                                         learning_rate = grid_search[i,"learning_rate"],
+                                         min_data_in_leaf = grid_search[i,"min_data_in_leaf"],
+                                         #min_data_in_leaf = k,
+                                         #feature_fraction= 0.7,
+                                         #bagging_fraction= 0.7,
+                                         data = dtrain_b3,
+                                         valids= valids_b3,
+                                         early_stopping_rounds = 30,
+                                         verbose = -1)
+    perf_b3[i] <- min(data.table::rbindlist(model_b3[[i]]$record_evals$test$l1))
+    gc(verbose = FALSE)
+  }
+  gc()
+  # grid_search
+  cat("Model ", which.min(perf_b3), " is lowest loss: ", min(perf_b3), sep = "","\n")
+  params_b3 <- (grid_search[which.min(perf_b3), ])
+
+  params_update_b3= list(objective = "regression_l1",
+                         metric = "mae",
+                         lambda_l1 = 0.1,
+                         num_leaves =as.numeric(params_b3[1]),
+                         max_depth = as.numeric(params_b3[2]),
+                         learning_rate = as.numeric(params_b3[3]),
+                         min_data_in_leaf = as.numeric(params_b3[4]),
+                         #min_data_in_leaf = k,
+                         #feature_fraction= 0.7,
+                         #bagging_fraction= 0.7,
+                         #nrounds = 400L,
+                         objective = "mae",
+                         num_threads = 8,
+                         boosting = "gbdt",
+                         verbose =-1)
+
+  model_iteration_b3 <- lightgbm::lgb.train(
+    params_update_b3,
+    dtrain_b3,
+    1000,
+    valids = valids_b3,
+    early_stopping_rounds = 30,
+    verbose = -1)
+  return(list(model_iteration_b3$best_iter, params_b3))
+}
+
+#### Optimize hyperparameters 10-minutely ####
+N = nrow(min10_power)/n_keys(min10_power)
+
+train_x <- to_x(min10 %>%
+                  slice_head(n = ceiling(N*TrainingProportion)))
+train_y <- to_y(min10 %>%
+                  slice_head(n = ceiling(N*TrainingProportion)))
+test_x <- to_x(min10 %>%
+                 slice_tail(n = N-ceiling(N*TrainingProportion)))
+test_y <- to_y(min10 %>%
+                 slice_tail(n = N-ceiling(N*TrainingProportion)))
+
+dtrain = lgb.Dataset(train_x, label = train_y)
+dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
+
+grid_search <- expand.grid(
+  num_leaves = c(30,50,80,100,150),
+  max_depth= c(8,9,10,11,12),
+  learning_rate= c(0.1,0.3,0.5,0.7,1),
+  min_data_in_leaf = c(50,80,100,150,200,250))
+
+min10_parameters <- tuning_para(dtrain, dtest, k=300)
+
+#### Optimize hyperparameters 20-minutely ####
+N = nrow(min20_power)/n_keys(min20_power)
+
+train_x <- to_x(min20 %>%
+                  slice_head(n = ceiling(N*TrainingProportion)))
+train_y <- to_y(min20 %>%
+                  slice_head(n = ceiling(N*TrainingProportion)))
+test_x <- to_x(min20 %>%
+                 slice_tail(n = N-ceiling(N*TrainingProportion)))
+test_y <- to_y(min20 %>%
+                 slice_tail(n = N-ceiling(N*TrainingProportion)))
+
+dtrain = lgb.Dataset(train_x, label = train_y)
+dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
+
+grid_search <- expand.grid(
+  num_leaves = c(30,50,80,100,150),
+  max_depth= c(8,9,10,11,12),
+  learning_rate= c(0.1,0.3,0.5,0.7,1),
+  min_data_in_leaf = c(50,80,100,150,200,250))
+
+min20_parameters <- tuning_para(dtrain, dtest, k=300)
+
+#### Optimize hyperparameters 30-minutely ####
+N = nrow(min30_power)/n_keys(min30_power)
+
+train_x <- to_x(min30 %>%
+                  slice_head(n = ceiling(N*TrainingProportion)))
+train_y <- to_y(min30 %>%
+                  slice_head(n = ceiling(N*TrainingProportion)))
+test_x <- to_x(min30 %>%
+                 slice_tail(n = N-ceiling(N*TrainingProportion)))
+test_y <- to_y(min30 %>%
+                 slice_tail(n = N-ceiling(N*TrainingProportion)))
+
+dtrain = lgb.Dataset(train_x, label = train_y)
+dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
+
+grid_search <- expand.grid(
+  num_leaves = c(30,50,80,100,150),
+  max_depth= c(8,9,10,11,12),
+  learning_rate= c(0.1,0.3,0.5,0.7,1),
+  min_data_in_leaf = c(50,80,100,150,200,250))
+
+min30_parameters <- tuning_para(dtrain, dtest, k=300)
+
+#### Optimize hyperparameters 1-hourly ####
+N = nrow(hr1_power)/n_keys(hr1_power)
+
+train_x <- to_x(hr1 %>%
+                  slice_head(n = ceiling(N*TrainingProportion)))
+train_y <- to_y(hr1 %>%
+                  slice_head(n = ceiling(N*TrainingProportion)))
+test_x <- to_x(hr1 %>%
+                 slice_tail(n = N-ceiling(N*TrainingProportion)))
+test_y <- to_y(hr1 %>%
+                 slice_tail(n = N-ceiling(N*TrainingProportion)))
+
+dtrain = lgb.Dataset(train_x, label = train_y)
+dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
+
+grid_search <- expand.grid(
+  num_leaves = c(5,10,20,30),
+  max_depth= c(10,11,12,13),
+  learning_rate= c(0.1,0.2,0.3,0.4),
+  min_data_in_leaf = c(225,250,275,300))
+
+hr1_parameters <- tuning_para(dtrain, dtest, k=300)
+
+#### Use gradient boosting - 1 hourly ####
+# this uses features calculated in the linear regression section
+
+  gc()
+
+  N = nrow(hr1)/n_keys(hr1)
+
+  fc1_gb_accuracy <- NULL
+
+  # do our TSCV manually, starting from 90% of the dataset up to the second last element
+  for (i in seq(ceiling(N*TrainingProportion),N-1,1)) {
+    # compute fit
+    fit_total <- hr1 %>%
+      slice_head(n = i) %>%
+      model(mod1 = lgbm1hr(Power ~ WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+
+    # forecast with new data
+    fc1_gb_accuracy <- fc1_gb_accuracy %>%
+      bind_rows(fit_total %>%
+                forecast(new_data = hr1 %>%
+                         group_by(Group, Subgroup) %>%
+                         dplyr::slice(n = i+1)) %>%
+                accuracy(hr1_power) %>% mutate(.id = i))
+  }
+
+#### Compare benchmark to linear regression and lightgbm - 10 minutely ####
+
+accuracy_benchmark_error <- fc10_benchmark_accuracy %>%
+  group_by(.model, Group, Subgroup)  %>%
   summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
 
 # Compute benchmark accuracy for Level 0
-accuracy10_benchmark_L0 <- accuracy_benchmark_error %>% 
+accuracy10_benchmark_L0 <- accuracy_benchmark_error %>%
   filter(is_aggregated(Group), is_aggregated(Subgroup))
 
 # Compute benchmark accuracy for Level 1
@@ -1187,11 +1087,11 @@ accuracy10_benchmark_L2 <- accuracy_benchmark_error %>%
 
 
 accuracy10_error <- fc10_accuracy %>%
-  group_by(.model, Group, Subgroup)  %>% 
+  group_by(.model, Group, Subgroup)  %>%
   summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
 
 # Compute accuracy for Level 0
-accuracy10_L0 <- accuracy10_error %>% 
+accuracy10_L0 <- accuracy10_error %>%
   filter(is_aggregated(Group), is_aggregated(Subgroup))
 
 # Compute accuracy for Level 1
@@ -1208,14 +1108,14 @@ accuracy10_L2 <- accuracy10_error %>%
 
 
 
-#### Compare benchmark to linear regression - 20 minutely ####
+#### Compare benchmark to linear regression and lightgbm - 20 minutely ####
 
 accuracy20_benchmark_error <- fc20_benchmark_accuracy %>%
-  group_by(.model, Group, Subgroup)  %>% 
+  group_by(.model, Group, Subgroup)  %>%
   summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
 
 # Compute benchmark accuracy for Level 0
-accuracy20_benchmark_L0 <- accuracy20_benchmark_error %>% 
+accuracy20_benchmark_L0 <- accuracy20_benchmark_error %>%
   filter(is_aggregated(Group), is_aggregated(Subgroup))
 
 # Compute benchmark accuracy for Level 1
@@ -1230,12 +1130,14 @@ accuracy20_benchmark_L2 <- accuracy20_benchmark_error %>%
   group_by(.model) %>%
   summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
 
+
+
 accuracy20_error <- fc20_accuracy %>%
-  group_by(.model, Group, Subgroup)  %>% 
+  group_by(.model, Group, Subgroup)  %>%
   summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
 
 # Compute benchmark accuracy for Level 0
-accuracy20_L0 <- accuracy20_error %>% 
+accuracy20_L0 <- accuracy20_error %>%
   filter(is_aggregated(Group), is_aggregated(Subgroup))
 
 # Compute benchmark accuracy for Level 1
@@ -1254,14 +1156,14 @@ accuracy20_L2 <- accuracy20_error %>%
 
 
 
-#### Compare benchmark to linear regression - 30 minutely ####
+#### Compare benchmark to linear regression and lightgbm - 30 minutely ####
 
 accuracy30_benchmark_error <- fc30_benchmark_accuracy %>%
-  group_by(.model, Group, Subgroup)  %>% 
+  group_by(.model, Group, Subgroup)  %>%
   summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
 
 # Compute benchmark accuracy for Level 0
-accuracy30_benchmark_L0 <- accuracy30_benchmark_error %>% 
+accuracy30_benchmark_L0 <- accuracy30_benchmark_error %>%
   filter(is_aggregated(Group), is_aggregated(Subgroup))
 
 # Compute benchmark accuracy for Level 1
@@ -1277,11 +1179,11 @@ accuracy30_benchmark_L2 <- accuracy30_benchmark_error %>%
   summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
 
 accuracy30_error <- fc30_accuracy %>%
-  group_by(.model, Group, Subgroup)  %>% 
+  group_by(.model, Group, Subgroup)  %>%
   summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
 
 # Compute benchmark accuracy for Level 0
-accuracy30_L0 <- accuracy30_error %>% 
+accuracy30_L0 <- accuracy30_error %>%
   filter(is_aggregated(Group), is_aggregated(Subgroup))
 
 # Compute benchmark accuracy for Level 1
@@ -1299,14 +1201,14 @@ accuracy30_L2 <- accuracy30_error %>%
 
 
 
-#### Compare benchmark to linear regression - 1 hourly ####
+#### Compare benchmark to linear regression and lightgbm - 1 hourly ####
 
 accuracy1_benchmark_error <- fc1_benchmark_accuracy %>%
-  group_by(.model, Group, Subgroup)  %>% 
+  group_by(.model, Group, Subgroup)  %>%
   summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
 
 # Compute benchmark accuracy for Level 0
-accuracy1_benchmark_L0 <- accuracy1_benchmark_error %>% 
+accuracy1_benchmark_L0 <- accuracy1_benchmark_error %>%
   filter(is_aggregated(Group), is_aggregated(Subgroup))
 
 # Compute benchmark accuracy for Level 1
@@ -1322,21 +1224,74 @@ accuracy1_benchmark_L2 <- accuracy1_benchmark_error %>%
   summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
 
 accuracy1_error <- fc1_accuracy %>%
-  group_by(.model, Group, Subgroup)  %>% 
+  group_by(.model, Group, Subgroup)  %>%
   summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
 
-# Compute benchmark accuracy for Level 0
-accuracy1_L0 <- accuracy1_error %>% 
+# Compute linear regression accuracy for Level 0
+accuracy1_L0 <- accuracy1_error %>%
   filter(is_aggregated(Group), is_aggregated(Subgroup))
 
-# Compute benchmark accuracy for Level 1
+# Compute linear regression accuracy for Level 1
 accuracy1_L1 <- accuracy1_error %>%
   filter(is_aggregated(Subgroup), !is_aggregated(Group)) %>%
   group_by(.model) %>%
   summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
 
-# Compute benchmark accuracy for Level 2
+# Compute linear regression accuracy for Level 2
 accuracy1_L2 <- accuracy1_error %>%
   filter(!is_aggregated(Subgroup), !is_aggregated(Group)) %>%
   group_by(.model) %>%
   summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
+
+accuracy1_gb_error <- fc1_gb_accuracy %>%
+  group_by(.model, Group, Subgroup)  %>%
+  summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
+
+# Compute lightgbm accuracy for Level 0
+accuracy1_gb_L0 <- accuracy1_gb_error %>%
+  filter(is_aggregated(Group), is_aggregated(Subgroup))
+
+# Compute lightgbm accuracy for Level 1
+accuracy1_gb_L1 <- accuracy1_gb_error %>%
+  filter(is_aggregated(Subgroup), !is_aggregated(Group)) %>%
+  group_by(.model) %>%
+  summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
+
+# Compute lightgbm accuracy for Level 2
+accuracy1_gb_L2 <- accuracy1_gb_error %>%
+  filter(!is_aggregated(Subgroup), !is_aggregated(Group)) %>%
+  group_by(.model) %>%
+  summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
+
+#### write accuracies to .csv ####
+write.csv(accuracy10_benchmark_L0, 'accuracy10_benchmark_L0.csv')
+write.csv(accuracy10_benchmark_L1, 'accuracy10_benchmark_L1.csv')
+write.csv(accuracy10_benchmark_L2, 'accuracy10_benchmark_L2.csv')
+
+write.csv(accuracy10_L0, 'accuracy10_L0.csv')
+write.csv(accuracy10_L1, 'accuracy10_L1.csv')
+write.csv(accuracy10_L2, 'accuracy10_L2.csv')
+
+write.csv(accuracy20_benchmark_L0, 'accuracy20_benchmark_L0.csv')
+write.csv(accuracy20_benchmark_L1, 'accuracy20_benchmark_L1.csv')
+write.csv(accuracy20_benchmark_L2, 'accuracy20_benchmark_L2.csv')
+
+write.csv(accuracy20_L0, 'accuracy20_L0.csv')
+write.csv(accuracy20_L1, 'accuracy20_L1.csv')
+write.csv(accuracy20_L2, 'accuracy20_L2.csv')
+
+write.csv(accuracy30_benchmark_L0, 'accuracy30_benchmark_L0.csv')
+write.csv(accuracy30_benchmark_L1, 'accuracy30_benchmark_L1.csv')
+write.csv(accuracy30_benchmark_L2, 'accuracy30_benchmark_L2.csv')
+
+write.csv(accuracy30_L0, 'accuracy30_L0.csv')
+write.csv(accuracy30_L1, 'accuracy30_L1.csv')
+write.csv(accuracy30_L2, 'accuracy30_L2.csv')
+
+write.csv(accuracy1_benchmark_L0, 'accuracy1_benchmark_L0.csv')
+write.csv(accuracy1_benchmark_L1, 'accuracy1_benchmark_L1.csv')
+write.csv(accuracy1_benchmark_L2, 'accuracy1_benchmark_L2.csv')
+
+write.csv(accuracy1_L0, 'accuracy1_L0.csv')
+write.csv(accuracy1_L1, 'accuracy1_L1.csv')
+write.csv(accuracy1_L2, 'accuracy1_L2.csv')
