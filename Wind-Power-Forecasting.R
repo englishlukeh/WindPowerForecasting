@@ -314,11 +314,12 @@ stopCluster(cl)
 # we use TSCV, forecasting on rolling origin basis
 
 # initialize our data set
-hr1_benchmark <- hr1_power %>% group_by(Group, Subgroup)
-#%>% filter_index("2021-06-30")
+hr1_benchmark <- hr1_power %>%
+  group_by(Group, Subgroup) %>%
+  filter_index("2021-06-01" ~ "2021-06-30")
 
 # compute number of entries
-N = nrow(hr1_power)/n_keys(hr1_power)
+N = nrow(hr1_benchmark)/n_keys(hr1_benchmark)
 
 # initialize our accuracy tibble
 fc1_benchmark_accuracy <- NULL;
@@ -741,10 +742,6 @@ stopCluster(cl)
 #### Time series linear regression with feature engineering - 1 hourly ####
 # again we use TSCV to evaluate the model
 hr1 <- hr1_power
-# %>%  filter_index("2021-06-30")
-
-# compute number of entries
-N = nrow(hr1_power)/n_keys(hr1_power)
 
 # initialize accuracy tibble
 fc1_accuracy <- NULL;
@@ -831,38 +828,47 @@ hr1 <- hr1 %>% mutate(
   `is_22` = as.integer(hour(Time) == 22)
 )
 
+hr1_test <- hr1
+# %>% filter_index("2021-06-20" ~ "2021-06-30")
+
+# compute number of entries
+N = nrow(hr1_test)/n_keys(hr1_test)
+
 # set up parallelisation
 registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
 fc1_accuracy <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
+
   # initialize accuracy tibble
   fc_accuracy <- NULL;
 
   # compute fit
-  fit_total <- hr1 %>%
+  fit_total <- hr1_test %>%
     slice_head(n = i) %>%
     model(mod1 = TSLM(Power ~ WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
     reconcile(
       bu_mod1 = bottom_up(mod1),
       td_mod1 = top_down(mod1),
       mo_mod1 = middle_out(mod1),
-      ols_mod1 = min_trace(mod1, method = "ols"),
-      mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      ols_mod1 = fabletools::min_trace(mod1, method = "ols"),
+      mint_mod1 = fabletools::min_trace(mod1, method = "mint_shrink")
     )
 
   # forecast with new data
   fc_accuracy <- fc_accuracy %>%
     bind_rows(fit_total %>%
-                forecast(new_data = hr1 %>%
+                forecast(new_data = hr1_test %>%
                            group_by(Group, Subgroup) %>%
-                           slice(n = i+1)) %>%
+                           dplyr::slice(n = i+1)) %>%
                 accuracy(hr1_power) %>% mutate(.id = i))
 
   return(fc_accuracy)
 }
 stopCluster(cl)
+
+
 
 #### Define auxiliary functions for LightGBM regression ####
 to_x <- function(data){
@@ -881,7 +887,7 @@ to_y <- function(data){
            as.matrix())
 }
 
-tuning_para <- function(train_data,test_data, k){
+tuning_para <- function(train_data,test_data, validation_x, validation_y){
   dtrain_b3 <- train_data
   dtest_b3 <- test_data
   valids_b3 = list(test=dtest_b3)
@@ -889,161 +895,125 @@ tuning_para <- function(train_data,test_data, k){
   model_b3 <- list()
   perf_b3 <- numeric(nrow(grid_search))
 
-  gc()
   for (i in 1:nrow(grid_search)) {
-    model_b3[[i]] <- lightgbm::lgb.train(objective = "regression_l1",
-                                         metric = "mae",
+    model_b3[[i]] <- lightgbm::lgb.train(objective = "regression",
+                                         metric = "l2",
                                          max_depth = grid_search[i, "max_depth"],
-                                         lambda_l1 =  0.1,
                                          num_leaves= grid_search[i,"num_leaves"],
                                          learning_rate = grid_search[i,"learning_rate"],
                                          min_data_in_leaf = grid_search[i,"min_data_in_leaf"],
-                                         #min_data_in_leaf = k,
-                                         #feature_fraction= 0.7,
-                                         #bagging_fraction= 0.7,
                                          data = dtrain_b3,
                                          valids= valids_b3,
-                                         early_stopping_rounds = 30,
                                          verbose = -1)
-    perf_b3[i] <- min(data.table::rbindlist(model_b3[[i]]$record_evals$test$l1))
-    gc(verbose = FALSE)
+
+    fit <- predict(model_b3[[i]], validation_x)
+    e <- (validation_y - fit)^2
+    
+    perf_b3[i] = mean(e)
   }
-  gc()
+
+
+
   # grid_search
   cat("Model ", which.min(perf_b3), " is lowest loss: ", min(perf_b3), sep = "","\n")
-  params_b3 <- (grid_search[which.min(perf_b3), ])
-
-  params_update_b3= list(objective = "regression_l1",
-                         metric = "mae",
-                         lambda_l1 = 0.1,
-                         num_leaves =as.numeric(params_b3[1]),
-                         max_depth = as.numeric(params_b3[2]),
-                         learning_rate = as.numeric(params_b3[3]),
-                         min_data_in_leaf = as.numeric(params_b3[4]),
-                         #min_data_in_leaf = k,
-                         #feature_fraction= 0.7,
-                         #bagging_fraction= 0.7,
-                         #nrounds = 400L,
-                         objective = "mae",
-                         num_threads = 8,
-                         boosting = "gbdt",
-                         verbose =-1)
-
-  model_iteration_b3 <- lightgbm::lgb.train(
-    params_update_b3,
-    dtrain_b3,
-    1000,
-    valids = valids_b3,
-    early_stopping_rounds = 30,
-    verbose = -1)
-  return(list(model_iteration_b3$best_iter, params_b3))
+  return(perf_b3)
 }
-
-#### Optimize hyperparameters 10-minutely ####
-N = nrow(min10_power)/n_keys(min10_power)
-
-train_x <- to_x(min10 %>%
-                  slice_head(n = ceiling(N*TrainingProportion)))
-train_y <- to_y(min10 %>%
-                  slice_head(n = ceiling(N*TrainingProportion)))
-test_x <- to_x(min10 %>%
-                 slice_tail(n = N-ceiling(N*TrainingProportion)))
-test_y <- to_y(min10 %>%
-                 slice_tail(n = N-ceiling(N*TrainingProportion)))
-
-dtrain = lgb.Dataset(train_x, label = train_y)
-dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
-
-grid_search <- expand.grid(
-  num_leaves = c(30,50,80,100,150),
-  max_depth= c(8,9,10,11,12),
-  learning_rate= c(0.1,0.3,0.5,0.7,1),
-  min_data_in_leaf = c(50,80,100,150,200,250))
-
-min10_parameters <- tuning_para(dtrain, dtest, k=300)
-
-#### Optimize hyperparameters 20-minutely ####
-N = nrow(min20_power)/n_keys(min20_power)
-
-train_x <- to_x(min20 %>%
-                  slice_head(n = ceiling(N*TrainingProportion)))
-train_y <- to_y(min20 %>%
-                  slice_head(n = ceiling(N*TrainingProportion)))
-test_x <- to_x(min20 %>%
-                 slice_tail(n = N-ceiling(N*TrainingProportion)))
-test_y <- to_y(min20 %>%
-                 slice_tail(n = N-ceiling(N*TrainingProportion)))
-
-dtrain = lgb.Dataset(train_x, label = train_y)
-dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
-
-grid_search <- expand.grid(
-  num_leaves = c(30,50,80,100,150),
-  max_depth= c(8,9,10,11,12),
-  learning_rate= c(0.1,0.3,0.5,0.7,1),
-  min_data_in_leaf = c(50,80,100,150,200,250))
-
-min20_parameters <- tuning_para(dtrain, dtest, k=300)
 
 #### Optimize hyperparameters 30-minutely ####
 N = nrow(min30_power)/n_keys(min30_power)
 
-train_x <- to_x(min30 %>%
-                  slice_head(n = ceiling(N*TrainingProportion)))
-train_y <- to_y(min30 %>%
-                  slice_head(n = ceiling(N*TrainingProportion)))
-test_x <- to_x(min30 %>%
-                 slice_tail(n = N-ceiling(N*TrainingProportion)))
-test_y <- to_y(min30 %>%
-                 slice_tail(n = N-ceiling(N*TrainingProportion)))
+errors <- data.frame()
 
-dtrain = lgb.Dataset(train_x, label = train_y)
-dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
+training_percentages = c(0.8,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88)
 
-grid_search <- expand.grid(
-  num_leaves = c(30,50,80,100,150),
-  max_depth= c(8,9,10,11,12),
-  learning_rate= c(0.1,0.3,0.5,0.7,1),
-  min_data_in_leaf = c(50,80,100,150,200,250))
+for (i in seq_along(training_percentages)){
+  ind = training_percentages[i]
+  
+  train_x <- to_x(min30 %>%
+                    slice_head(n = ceiling(N*ind)))
+  train_y <- to_y(min30 %>%
+                    slice_head(n = ceiling(N*ind)))
+  test_x <- to_x(min30 %>%
+                   dplyr::slice(ceiling(N*ind)+1:floor(N*(ind + 0.1))))
+  test_y <- to_y(min30 %>%
+                   dplyr::slice(ceiling(N*ind)+1:floor(N*(ind + 0.1))))
+  
+  validation_x <- to_x(min30 %>%
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02)))) 
+  validation_y <- to_y(min30 %>%
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02)))) 
+  
+  dtrain = lgb.Dataset(train_x, label = train_y)
+  dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
+  
+  grid_search <- expand.grid(
+    num_leaves = c(31,80,90,100,110,120),
+    max_depth= c(-1,8,9,10),
+    learning_rate= c(0.1,0.15,0.2),
+    min_data_in_leaf = c(20,150,175,200,225))
+  
+  errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
+}
 
-min30_parameters <- tuning_para(dtrain, dtest, k=300)
+optimal <- grid_search[which.min(colMeans(errors)), ]
+print(optimal)
 
 #### Optimize hyperparameters 1-hourly ####
 N = nrow(hr1_power)/n_keys(hr1_power)
 
-train_x <- to_x(hr1 %>%
-                  slice_head(n = ceiling(N*TrainingProportion)))
-train_y <- to_y(hr1 %>%
-                  slice_head(n = ceiling(N*TrainingProportion)))
-test_x <- to_x(hr1 %>%
-                 slice_tail(n = N-ceiling(N*TrainingProportion)))
-test_y <- to_y(hr1 %>%
-                 slice_tail(n = N-ceiling(N*TrainingProportion)))
+errors <- data.frame()
 
-dtrain = lgb.Dataset(train_x, label = train_y)
-dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
+training_percentages = c(0.8,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88)
 
-grid_search <- expand.grid(
-  num_leaves = c(5,10,20,30),
-  max_depth= c(10,11,12,13),
-  learning_rate= c(0.1,0.2,0.3,0.4),
-  min_data_in_leaf = c(225,250,275,300))
+for (i in seq_along(training_percentages)){
+  ind = training_percentages[i]
 
-hr1_parameters <- tuning_para(dtrain, dtest, k=300)
+  train_x <- to_x(hr1 %>%
+                    slice_head(n = ceiling(N*ind)))
+  train_y <- to_y(hr1 %>%
+                    slice_head(n = ceiling(N*ind)))
+  test_x <- to_x(hr1 %>%
+                   dplyr::slice(ceiling(N*ind)+1:floor(N*(ind + 0.1))))
+  test_y <- to_y(hr1 %>%
+                   dplyr::slice(ceiling(N*ind)+1:floor(N*(ind + 0.1))))
+  
+  validation_x <- to_x(hr1 %>%
+                        dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02)))) 
+  validation_y <- to_y(hr1 %>%
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02)))) 
 
-#### Use gradient boosting - 1 hourly ####
-# this uses features calculated in the linear regression section
+  dtrain = lgb.Dataset(train_x, label = train_y)
+  dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
 
+  grid_search <- expand.grid(
+    num_leaves = c(31,80,90,100,110,120),
+    max_depth= c(-1,8,9,10),
+    learning_rate= c(0.1,0.15,0.2),
+    min_data_in_leaf = c(20,150,175,200,225))
+
+  errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
+}
+
+optimal <- grid_search[which.min(colMeans(errors)), ]
+print(optimal)
+
+
+  #### Use gradient boosting - 1 hourly ####
+  # this uses features calculated in the linear regression section
+  
+  hr1_test <- hr1
+  # %>% filter_index("2021-06-20" ~ "2021-06-30")
+  
   gc()
-
-  N = nrow(hr1)/n_keys(hr1)
-
+  
+  N = nrow(hr1_test)/n_keys(hr1_test)
+  
   fc1_gb_accuracy <- NULL
-
+  
   # do our TSCV manually, starting from 90% of the dataset up to the second last element
   for (i in seq(ceiling(N*TrainingProportion),N-1,1)) {
     # compute fit
-    fit_total <- hr1 %>%
+    fit_total <- hr1_test %>%
       slice_head(n = i) %>%
       model(mod1 = lgbm1hr(Power ~ WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
       reconcile(
@@ -1053,15 +1023,52 @@ hr1_parameters <- tuning_para(dtrain, dtest, k=300)
         ols_mod1 = min_trace(mod1, method = "ols"),
         mint_mod1 = min_trace(mod1, method = "mint_shrink")
       )
-
+    
     # forecast with new data
     fc1_gb_accuracy <- fc1_gb_accuracy %>%
       bind_rows(fit_total %>%
-                forecast(new_data = hr1 %>%
-                         group_by(Group, Subgroup) %>%
-                         dplyr::slice(n = i+1)) %>%
-                accuracy(hr1_power) %>% mutate(.id = i))
+                  forecast(new_data = hr1_test %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(n = i+1)) %>%
+                  accuracy(hr1_power) %>% mutate(.id = i))
+  }  
+  
+  
+  #### Use gradient boosting - 30 minutely ####
+  # this uses features calculated in the linear regression section
+  
+  min30_test <- min30
+  # %>% filter_index("2021-06-20" ~ "2021-06-30")
+  
+  gc()
+  
+  N = nrow(min30_test)/n_keys(min30_test)
+  
+  fc30_gb_accuracy <- NULL
+  
+  # do our TSCV manually, starting from 90% of the dataset up to the second last element
+  for (i in seq(ceiling(N*TrainingProportion),N-1,1)) {
+    # compute fit
+    fit_total <- min30_test %>%
+      slice_head(n = i) %>%
+      model(mod1 = lgbm30min(Power ~ WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+    
+    # forecast with new data
+    fc30_gb_accuracy <- fc30_gb_accuracy %>%
+      bind_rows(fit_total %>%
+                  forecast(new_data = min30_test %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(n = i+1)) %>%
+                  accuracy(min30_power) %>% mutate(.id = i))
   }
+  
 
 #### Compare benchmark to linear regression and lightgbm - 10 minutely ####
 
@@ -1198,6 +1205,26 @@ accuracy30_L2 <- accuracy30_error %>%
   group_by(.model) %>%
   summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
 
+accuracy30_gb_error <- fc30_gb_accuracy %>%
+  group_by(.model, Group, Subgroup)  %>%
+  summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
+
+# Compute lightgbm accuracy for Level 0
+accuracy30_gb_L0 <- accuracy30_gb_error %>%
+  filter(is_aggregated(Group), is_aggregated(Subgroup))
+
+# Compute lightgbm accuracy for Level 1
+accuracy30_gb_L1 <- accuracy30_gb_error %>%
+  filter(is_aggregated(Subgroup), !is_aggregated(Group)) %>%
+  group_by(.model) %>%
+  summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
+
+# Compute lightgbm accuracy for Level 2
+accuracy30_gb_L2 <- accuracy30_gb_error %>%
+  filter(!is_aggregated(Subgroup), !is_aggregated(Group)) %>%
+  group_by(.model) %>%
+  summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
+
 
 
 
@@ -1295,3 +1322,24 @@ write.csv(accuracy1_benchmark_L2, 'accuracy1_benchmark_L2.csv')
 write.csv(accuracy1_L0, 'accuracy1_L0.csv')
 write.csv(accuracy1_L1, 'accuracy1_L1.csv')
 write.csv(accuracy1_L2, 'accuracy1_L2.csv')
+
+
+#### testing code ####
+# use 30 days of 1 hourly code (aggregated top level to compare)
+# Compute benchmark accuracy for Level 0
+accuracy1_error <- fc1_accuracy %>%
+  group_by(.model, Group, Subgroup)  %>%
+  summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
+
+# Compute linear regression accuracy for Level 0
+accuracy1_L0 <- accuracy1_error %>%
+  filter(is_aggregated(Group), is_aggregated(Subgroup))
+
+accuracy1_gb_error <- fc1_gb_accuracy %>%
+  group_by(.model, Group, Subgroup)  %>%
+  summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
+
+# Compute lightgbm accuracy for Level 0
+accuracy1_gb_L0 <- accuracy1_gb_error %>%
+  filter(is_aggregated(Group), is_aggregated(Subgroup))
+
