@@ -3,3 +3,6 @@ fc30_lr.csv
 fc30_benchmark.csv
 fc1_lr.csv
 fc1_benchmark.csv
+*.png
+*.csv
+.Rhistory
