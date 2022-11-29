@@ -6,3 +6,4 @@ fc1_benchmark.csv
 *.png
 *.csv
 .Rhistory
+*.svg

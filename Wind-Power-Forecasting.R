@@ -11,6 +11,7 @@ library(doParallel)
 library(lightgbm)
 library(distributional)
 
+
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set this to your working directory
 
 wind_speed <- read_excel("WindSpeed_2020-2021.xlsx")
@@ -89,6 +90,13 @@ min10_power <- min10_power %>%
 TrainingProportion <- 0.90
 # set number of threads
 numThreads = 4;
+
+library(ggpubr, include.only = 'ggarrange') # include one function
+
+saveRDS(min10_power, file = "min10.rds")
+saveRDS(min20_power, file = "min20.rds")
+saveRDS(min30_power, file = "min30.rds")
+saveRDS(hr1_power, file = "hr1.rds")
 
 
 
@@ -221,6 +229,17 @@ fc10_benchmark <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine
     bind_rows(min10_tr_benchmark %>%
                 model(naive_model = NAIVE(Power)) %>%
                 forecast(h=1))
+  # extract fitted and residuals
+  if (i == ceiling(N*TrainingProportion)){
+    mod_tmp <- min10_tr_benchmark %>%
+      model(naive_model = NAIVE(Power))
+    fitted <- mod_tmp %>%
+      fitted()
+    residuals <- mod_tmp %>%
+      residuals()
+    saveRDS(fitted, file = "fc10_benchmark_fitted.rds")
+    saveRDS(residuals, file = "fc10_benchmark_residuals.rds")
+  }
 
   return(fc_benchmark)
 }
@@ -257,6 +276,17 @@ fc20_benchmark <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine
       bind_rows(min20_tr_benchmark %>%
                   model(naive_model = NAIVE(Power)) %>%
                   forecast(h=1))
+    # extract fitted and residuals
+    if (i == ceiling(N*TrainingProportion)){
+      mod_tmp <- min20_tr_benchmark %>%
+        model(naive_model = NAIVE(Power))
+      fitted <- mod_tmp %>%
+        fitted()
+      residuals <- mod_tmp %>%
+        residuals()
+      saveRDS(fitted, file = "fc20_benchmark_fitted.rds")
+      saveRDS(residuals, file = "fc20_benchmark_residuals.rds")
+    }
 
     return(fc_benchmark)
   }
@@ -293,7 +323,17 @@ fc30_benchmark <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine
       bind_rows(min30_tr_benchmark %>%
                   model(naive_model = NAIVE(Power)) %>%
                   forecast(h=1))
-
+    # extract fitted and residuals
+    if (i == ceiling(N*TrainingProportion)){
+      mod_tmp <- min30_tr_benchmark %>%
+        model(naive_model = NAIVE(Power))
+      fitted <- mod_tmp %>%
+        fitted()
+      residuals <- mod_tmp %>%
+        residuals()
+      saveRDS(fitted, file = "fc30_benchmark_fitted.rds")
+      saveRDS(residuals, file = "fc30_benchmark_residuals.rds")
+    }
 
     return(fc_benchmark)
   }
@@ -330,6 +370,17 @@ fc1_benchmark <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine 
       bind_rows(hr1_tr_benchmark %>%
                   model(naive_model = NAIVE(Power)) %>%
                   forecast(h=1))
+    # extract fitted and residuals
+    if (i == ceiling(N*TrainingProportion)){
+      mod_tmp <- hr1_tr_benchmark %>%
+        model(naive_model = NAIVE(Power))
+      fitted <- mod_tmp %>%
+        fitted()
+      residuals <- mod_tmp %>%
+        residuals()
+      saveRDS(fitted, file = "fc1_benchmark_fitted.rds")
+      saveRDS(residuals, file = "fc1_benchmark_residuals.rds")
+    }
 
     return(fc_benchmark)
   }
@@ -455,6 +506,16 @@ fc10_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind
       ols_mod1 = min_trace(mod1, method = "ols"),
       mint_mod1 = min_trace(mod1, method = "mint_shrink")
     )
+
+  # extract fitted and residuals
+  if (i == ceiling(N*TrainingProportion)){
+    fitted <- fit_total %>%
+      fitted()
+    residuals <- fit_total %>%
+      residuals()
+    saveRDS(fitted, file = "fc10_lr_fitted.rds")
+    saveRDS(residuals, file = "fc10_lr_residuals.rds")
+  }
 
   # forecast with new data
   fc_lr <- fc_lr %>%
@@ -585,6 +646,16 @@ fc20_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind
       mint_mod1 = min_trace(mod1, method = "mint_shrink")
     )
 
+  # extract fitted and residuals
+  if (i == ceiling(N*TrainingProportion)){
+    fitted <- fit_total %>%
+      fitted()
+    residuals <- fit_total %>%
+      residuals()
+    saveRDS(fitted, file = "fc20_lr_fitted.rds")
+    saveRDS(residuals, file = "fc20_lr_residuals.rds")
+  }
+
   # forecast with new data
   fc_lr <- fc_lr %>%
     bind_rows(fit_total %>%
@@ -711,6 +782,16 @@ fc30_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind
       ols_mod1 = min_trace(mod1, method = "ols"),
       mint_mod1 = min_trace(mod1, method = "mint_shrink")
     )
+
+  # extract fitted and residuals
+  if (i == ceiling(N*TrainingProportion)){
+    fitted <- fit_total %>%
+      fitted()
+    residuals <- fit_total %>%
+      residuals()
+    saveRDS(fitted, file = "fc30_lr_fitted.rds")
+    saveRDS(residuals, file = "fc30_lr_residuals.rds")
+  }
 
   # forecast with new data
   fc_lr <- fc_lr %>%
@@ -840,6 +921,16 @@ fc1_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_
       mint_mod1 = fabletools::min_trace(mod1, method = "mint_shrink")
     )
 
+  # extract fitted and residuals
+  if (i == ceiling(N*TrainingProportion)){
+    fitted <- fit_total %>%
+      fitted()
+    residuals <- fit_total %>%
+      residuals()
+    saveRDS(fitted, file = "fc1_lr_fitted.rds")
+    saveRDS(residuals, file = "fc1_lr_residuals.rds")
+  }
+
   # forecast with new data
   fc_lr <- fc_lr %>%
     bind_rows(fit_total %>%
@@ -906,6 +997,89 @@ tuning_para <- function(train_data,test_data, validation_x, validation_y){
   return(perf_b3)
 }
 
+#### Optimize hyperparameters 10-minutely ####
+N = nrow(min10_power)/n_keys(min10_power)
+
+errors <- data.frame()
+
+training_percentages = c(0.8,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88)
+
+for (i in seq_along(training_percentages)){
+
+  gc()
+
+  ind = training_percentages[i]
+
+  train_x <- to_x(min10 %>%
+                    slice_head(n = ceiling(N*ind)))
+  train_y <- to_y(min10 %>%
+                    slice_head(n = ceiling(N*ind)))
+  test_x <- to_x(min10 %>%
+                   dplyr::slice(ceiling(N*ind)+1:floor(N*(ind + 0.1))))
+  test_y <- to_y(min10 %>%
+                   dplyr::slice(ceiling(N*ind)+1:floor(N*(ind + 0.1))))
+
+  validation_x <- to_x(min10 %>%
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02))))
+  validation_y <- to_y(min10 %>%
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02))))
+
+  dtrain = lgb.Dataset(train_x, label = train_y)
+  dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
+
+  grid_search <- expand.grid(
+    num_leaves = c(140),
+    max_depth= c(13),
+    learning_rate= c(0.1),
+    min_data_in_leaf = c(140),
+    linear_lambda = c(1,2,3,4,5))
+
+  errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
+}
+
+optimal <- grid_search[which.min(colMeans(errors)), ]
+print(optimal)
+
+#### Optimize hyperparameters 20-minutely ####
+N = nrow(min20_power)/n_keys(min20_power)
+
+errors <- data.frame()
+
+training_percentages = c(0.8,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88)
+
+for (i in seq_along(training_percentages)){
+  ind = training_percentages[i]
+
+  train_x <- to_x(min20 %>%
+                    slice_head(n = ceiling(N*ind)))
+  train_y <- to_y(min20 %>%
+                    slice_head(n = ceiling(N*ind)))
+  test_x <- to_x(min20 %>%
+                   dplyr::slice(ceiling(N*ind)+1:floor(N*(ind + 0.1))))
+  test_y <- to_y(min20 %>%
+                   dplyr::slice(ceiling(N*ind)+1:floor(N*(ind + 0.1))))
+
+  validation_x <- to_x(min20 %>%
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02))))
+  validation_y <- to_y(min20 %>%
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02))))
+
+  dtrain = lgb.Dataset(train_x, label = train_y)
+  dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
+
+  grid_search <- expand.grid(
+    num_leaves = c(100),
+    max_depth= c(9),
+    learning_rate= c(0.1),
+    min_data_in_leaf = c(180),
+    linear_lambda = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15))
+
+  errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
+}
+
+optimal <- grid_search[which.min(colMeans(errors)), ]
+print(optimal)
+
 #### Optimize hyperparameters 30-minutely ####
 N = nrow(min30_power)/n_keys(min30_power)
 
@@ -934,11 +1108,11 @@ for (i in seq_along(training_percentages)){
   dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
 
   grid_search <- expand.grid(
-    num_leaves = c(80,90,100),
-    max_depth= c(7,8,9),
+    num_leaves = c(80),
+    max_depth= c(7),
     learning_rate= c(0.1),
-    min_data_in_leaf = c(175,200,225),
-    linear_lambda = c(0,2,4,6,8))
+    min_data_in_leaf = c(200),
+    linear_lambda = c(2,3,4,5))
 
   errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
 }
@@ -1058,10 +1232,11 @@ print(optimal)
     objective = "regression"
     , metric = "l2"
     , learning_rate = 0.1
-    , num_leaves = 90
-    , max_depth = -1
+    , num_leaves = 80
+    , max_depth = 7
     , min_data_in_leaf = 200
     , num_threads = 8
+    , linear_lambda = 3
   )
 
   # do our TSCV manually, starting from 90% of the dataset up to the second last element
@@ -1088,6 +1263,119 @@ print(optimal)
                              group_by(Group, Subgroup) %>%
                              dplyr::slice(n = i+1)))
   }
+
+  saveRDS(fc30_gb, file = "fc30_gb.rds")
+
+  #### Use gradient boosting - 20 minutely ####
+  # this uses features calculated in the linear regression section
+
+  min20_test <- min20
+  # %>% filter_index("2021-06-20" ~ "2021-06-30")
+
+  gc()
+
+  N = nrow(min20_test)/n_keys(min20_test)
+
+  fc20_gb <- NULL
+
+  # define parameters for 30-minutely
+  params = list(
+    objective = "regression"
+    , metric = "l2"
+    , learning_rate = 0.1
+    , num_leaves = 100
+    , max_depth = 9
+    , min_data_in_leaf = 180
+    , num_threads = 8
+    , linear_lambda = 1
+  )
+
+  # do our TSCV manually, starting from 90% of the dataset up to the second last element
+  for (i in seq(ceiling(N*TrainingProportion),N-1,1)) {
+
+    gc()
+
+    # compute fit
+    fit_total <- min20_test %>%
+      slice_head(n = i) %>%
+      model(mod1 = lgbm(Power ~ hyperparameters(params) + WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+
+    # forecast with new data
+    fc20_gb <- fc20_gb %>%
+      bind_rows(fit_total %>%
+                  forecast(new_data = min20_test %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(n = i+1)))
+  }
+
+  saveRDS(fc20_gb, file = "fc20_gb.rds")
+
+  #### Use gradient boosting - 10 minutely ####
+  # this uses features calculated in the linear regression section
+
+  min10_test <- min10
+  # %>% filter_index("2021-06-20" ~ "2021-06-30")
+
+  gc()
+
+  N = nrow(min10_test)/n_keys(min10_test)
+
+  fc10_gb <- NULL
+
+  # define parameters for 10-minutely
+  params = list(
+    objective = "regression"
+    , metric = "l2"
+    , learning_rate = 0.1
+    , num_leaves = 140
+    , max_depth = 13
+    , min_data_in_leaf = 140
+    , num_threads = 8
+    , linear_lambda = 1
+  )
+
+  # do our TSCV manually, starting from 90% of the dataset up to the second last element
+  for (i in seq(ceiling(N*TrainingProportion),N-1,1)) {
+
+    gc()
+
+    # compute fit
+    fit_total <- min10_test %>%
+      slice_head(n = i) %>%
+      model(mod1 = lgbm(Power ~ hyperparameters(params) + WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+
+    # forecast with new data
+    fc10_gb <- fc10_gb %>%
+      bind_rows(fit_total %>%
+                  forecast(new_data = min10_test %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(n = i+1)))
+  }
+
+  saveRDS(fc10_gb, file = "fc10_gb.rds")
+
+#### Load forecasts from .rds files ####
+  fc1_benchmark <- readRDS(file = "fc1_benchmark.rds")
+  fc1_lr <- readRDS(file = "fc1_lr.rds")
+  fc1_gb <- readRDS(file = "fc1_gb.rds")
+
+  fc30_benchmark <- readRDS(file = "fc30_benchmark.rds")
+  fc30_lr <- readRDS(file = "fc30_lr.rds")
+  fc30_gb <- readRDS(file = "fc30_gb.rds")
 
 
 #### Compare benchmark to linear regression and lightgbm - 10 minutely ####
@@ -1185,7 +1473,8 @@ accuracy20_L2 <- accuracy20_error %>%
 
 #### Compare benchmark to linear regression and lightgbm - 30 minutely ####
 
-accuracy30_benchmark_error <- fc30_benchmark_accuracy %>%
+accuracy30_benchmark_error <- fc30_benchmark %>%
+  accuracy(min30_power) %>%
   group_by(.model, Group, Subgroup)  %>%
   summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
 
@@ -1205,7 +1494,8 @@ accuracy30_benchmark_L2 <- accuracy30_benchmark_error %>%
   group_by(.model) %>%
   summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
 
-accuracy30_error <- fc30_accuracy %>%
+accuracy30_error <- fc30_lr %>%
+  accuracy(min30_power) %>%
   group_by(.model, Group, Subgroup)  %>%
   summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
 
@@ -1225,7 +1515,8 @@ accuracy30_L2 <- accuracy30_error %>%
   group_by(.model) %>%
   summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
 
-accuracy30_gb_error <- fc30_gb_accuracy %>%
+accuracy30_gb_error <- fc30_gb %>%
+  accuracy(min30_power) %>%
   group_by(.model, Group, Subgroup)  %>%
   summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
 
@@ -1313,42 +1604,6 @@ accuracy1_gb_L2 <- accuracy1_gb_error %>%
   group_by(.model) %>%
   summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
 
-#### write accuracies to .csv ####
-write.csv(accuracy10_benchmark_L0, 'accuracy10_benchmark_L0.csv')
-write.csv(accuracy10_benchmark_L1, 'accuracy10_benchmark_L1.csv')
-write.csv(accuracy10_benchmark_L2, 'accuracy10_benchmark_L2.csv')
-
-write.csv(accuracy10_L0, 'accuracy10_L0.csv')
-write.csv(accuracy10_L1, 'accuracy10_L1.csv')
-write.csv(accuracy10_L2, 'accuracy10_L2.csv')
-
-write.csv(accuracy20_benchmark_L0, 'accuracy20_benchmark_L0.csv')
-write.csv(accuracy20_benchmark_L1, 'accuracy20_benchmark_L1.csv')
-write.csv(accuracy20_benchmark_L2, 'accuracy20_benchmark_L2.csv')
-
-write.csv(accuracy20_L0, 'accuracy20_L0.csv')
-write.csv(accuracy20_L1, 'accuracy20_L1.csv')
-write.csv(accuracy20_L2, 'accuracy20_L2.csv')
-
-write.csv(accuracy30_benchmark_L0, 'accuracy30_benchmark_L0.csv')
-write.csv(accuracy30_benchmark_L1, 'accuracy30_benchmark_L1.csv')
-write.csv(accuracy30_benchmark_L2, 'accuracy30_benchmark_L2.csv')
-
-write.csv(accuracy30_L0, 'accuracy30_L0.csv')
-write.csv(accuracy30_L1, 'accuracy30_L1.csv')
-write.csv(accuracy30_L2, 'accuracy30_L2.csv')
-
-write.csv(accuracy1_benchmark_L0, 'accuracy1_benchmark_L0.csv')
-write.csv(accuracy1_benchmark_L1, 'accuracy1_benchmark_L1.csv')
-write.csv(accuracy1_benchmark_L2, 'accuracy1_benchmark_L2.csv')
-
-write.csv(accuracy1_L0, 'accuracy1_L0.csv')
-write.csv(accuracy1_L1, 'accuracy1_L1.csv')
-write.csv(accuracy1_L2, 'accuracy1_L2.csv')
-
-write.csv(accuracy1_gb_L0, 'accuracy1_gb_L0.csv')
-write.csv(accuracy1_gb_L1, 'accuracy1_gb_L1.csv')
-write.csv(accuracy1_gb_L2, 'accuracy1_gb_L2.csv')
 
 #### descriptive statistics ####
 A_10 <- min10_power %>% filter(Group == "A", is_aggregated(Subgroup))
@@ -1408,9 +1663,6 @@ boxplot(A_10$Power, B_10$Power, C_10$Power, D_10$Power, agg_10$Power,
         horizontal = FALSE
 )
 
-
-
-
 min10_power %>% filter(Group == "A", Subgroup == "A1") %>% as.data.frame() %>% select(Power) %>% summary()
 min10_power %>% filter(Group == "A", Subgroup == "A2") %>% as.data.frame() %>% select(Power) %>% summary()
 min10_power %>% filter(Group == "A", Subgroup == "A3") %>% as.data.frame() %>% select(Power) %>% summary()
@@ -1446,40 +1698,59 @@ min10_power %>% filter(Group == "D", is_aggregated(Subgroup)) %>% as.data.frame(
 
 min10_power %>% filter(is_aggregated(Group), is_aggregated(Subgroup)) %>% as.data.frame() %>% select(Power) %>% summary()
 
-min10_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "A") %>% filter_index("2021-01-01") %>% autoplot()
-min10_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "B") %>% filter_index("2021-01-01") %>% autoplot()
-min10_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "C") %>% filter_index("2021-01-01") %>% autoplot()
-min10_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "D") %>% filter_index("2021-01-01") %>% autoplot()
+plota <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "A") %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
+plotb <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "B") %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
+plotc <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "C") %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
+plotd <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "D") %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
 
-min10_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group=="A") %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
-min10_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group=="B") %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
-min10_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group=="C") %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
-min10_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group=="D") %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
+ggpubr::ggarrange(plota, plotb, plotc, plotd,
+          labels = c("A", "B", "C", "D"),
+          ncol = 1, nrow = 4)
 
-min10_power %>% filter(is_aggregated(Subgroup), !is_aggregated(Group)) %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
-min10_power %>% filter(is_aggregated(Group), is_aggregated(Subgroup)) %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
+plotabcdnoagg <- hr1_power %>% filter(is_aggregated(Subgroup), !is_aggregated(Group)) %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
+plotabcdagg <- hr1_power %>% filter(is_aggregated(Group), is_aggregated(Subgroup)) %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
 
-#### import csv for accuracy ####
-fc1_gb <- readr::read_csv2("fc1_gb.csv") %>% select(-"...1")
-fc1_gb <- fc1_gb %>%
-  mutate(Time = as_datetime(Time), Power = distributional::dist_normal(.mean, 0)) %>%
-  as_tsibble(index = Time, key = c("Group", "Subgroup", ".model")) %>%
-  group_by_key()
+ggpubr::ggarrange(plotabcdnoagg, plotabcdagg,
+                  labels = c("A", "B"),
+                  ncol = 1, nrow = 2)
 
+#### write accuracies to .csv ####
+write.csv(accuracy10_benchmark_L0, 'accuracy10_benchmark_L0.csv')
+write.csv(accuracy10_benchmark_L1, 'accuracy10_benchmark_L1.csv')
+write.csv(accuracy10_benchmark_L2, 'accuracy10_benchmark_L2.csv')
 
-fc1_gb %>%
-  as_fable("Power", "Power") %>%
-  accuracy(hr1_power)
+write.csv(accuracy10_L0, 'accuracy10_L0.csv')
+write.csv(accuracy10_L1, 'accuracy10_L1.csv')
+write.csv(accuracy10_L2, 'accuracy10_L2.csv')
 
-fc1_gb %>%
-  filter(is_aggregated(Group))
+write.csv(accuracy20_benchmark_L0, 'accuracy20_benchmark_L0.csv')
+write.csv(accuracy20_benchmark_L1, 'accuracy20_benchmark_L1.csv')
+write.csv(accuracy20_benchmark_L2, 'accuracy20_benchmark_L2.csv')
 
-tmp <- agg_vec(
-  x = c(NA, "A", "B", "C", "D"),
-  aggregated = c(TRUE, FALSE, FALSE, FALSE, FALSE)
-)
+write.csv(accuracy20_L0, 'accuracy20_L0.csv')
+write.csv(accuracy20_L1, 'accuracy20_L1.csv')
+write.csv(accuracy20_L2, 'accuracy20_L2.csv')
 
-agg_vec(
-  x = c(NA, "A1", "B", "C", "D"),
-  aggregated = c(TRUE, FALSE, FALSE, FALSE, FALSE)
-)
+write.csv(accuracy30_benchmark_L0, 'accuracy30_benchmark_L0.csv')
+write.csv(accuracy30_benchmark_L1, 'accuracy30_benchmark_L1.csv')
+write.csv(accuracy30_benchmark_L2, 'accuracy30_benchmark_L2.csv')
+
+write.csv(accuracy30_L0, 'accuracy30_L0.csv')
+write.csv(accuracy30_L1, 'accuracy30_L1.csv')
+write.csv(accuracy30_L2, 'accuracy30_L2.csv')
+
+write.csv(accuracy30_gb_L0, 'accuracy30_gb_L0.csv')
+write.csv(accuracy30_gb_L1, 'accuracy30_gb_L1.csv')
+write.csv(accuracy30_gb_L2, 'accuracy30_gb_L2.csv')
+
+write.csv(accuracy1_benchmark_L0, 'accuracy1_benchmark_L0.csv')
+write.csv(accuracy1_benchmark_L1, 'accuracy1_benchmark_L1.csv')
+write.csv(accuracy1_benchmark_L2, 'accuracy1_benchmark_L2.csv')
+
+write.csv(accuracy1_L0, 'accuracy1_L0.csv')
+write.csv(accuracy1_L1, 'accuracy1_L1.csv')
+write.csv(accuracy1_L2, 'accuracy1_L2.csv')
+
+write.csv(accuracy1_gb_L0, 'accuracy1_gb_L0.csv')
+write.csv(accuracy1_gb_L1, 'accuracy1_gb_L1.csv')
+write.csv(accuracy1_gb_L2, 'accuracy1_gb_L2.csv')
