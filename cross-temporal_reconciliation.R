@@ -16,40 +16,40 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set this to your w
 
 #### Define auxiliary functions ####
 # function to convert grouped/keyed tsibble into matrix of ts() time series
-to_ts <- function(data, variable){
+to_matrix_for_ts <- function(data, variable){
   N = nrow(data)/n_keys(data)
   matrix_tmp <- matrix(NA, nrow = N, ncol = n_keys(data))
-  matrix_tmp[,1] <- t(as.ts(data %>% filter(is_aggregated(Group), is_aggregated(Subgroup)), value = variable))
-  matrix_tmp[,2] <- t(as.ts(data %>% filter(Group == "A", is_aggregated(Subgroup)), value = variable))
-  matrix_tmp[,3] <- t(as.ts(data %>% filter(Group == "B", is_aggregated(Subgroup)), value = variable))
-  matrix_tmp[,4] <- t(as.ts(data %>% filter(Group == "C", is_aggregated(Subgroup)), value = variable))
-  matrix_tmp[,5] <- t(as.ts(data %>% filter(Group == "D", is_aggregated(Subgroup)), value = variable))
-  matrix_tmp[,5] <- t(as.ts(data %>% filter(Group == "D", is_aggregated(Subgroup)), value = variable))
-  matrix_tmp[,6] <- t(as.ts(data %>% filter(Group == "A", Subgroup == "A1"), value = variable))
-  matrix_tmp[,7] <- t(as.ts(data %>% filter(Group == "A", Subgroup == "A2"), value = variable))
-  matrix_tmp[,8] <- t(as.ts(data %>% filter(Group == "A", Subgroup == "A3"), value = variable))
-  matrix_tmp[,9] <- t(as.ts(data %>% filter(Group == "A", Subgroup == "A4"), value = variable))
-  matrix_tmp[,10] <- t(as.ts(data %>% filter(Group == "A", Subgroup == "A5"), value = variable))
-  matrix_tmp[,11] <- t(as.ts(data %>% filter(Group == "A", Subgroup == "A6"), value = variable))
-  matrix_tmp[,12] <- t(as.ts(data %>% filter(Group == "A", Subgroup == "A7"), value = variable))
-  matrix_tmp[,13] <- t(as.ts(data %>% filter(Group == "B", Subgroup == "B1"), value = variable))
-  matrix_tmp[,14] <- t(as.ts(data %>% filter(Group == "B", Subgroup == "B2"), value = variable))
-  matrix_tmp[,15] <- t(as.ts(data %>% filter(Group == "B", Subgroup == "B3"), value = variable))
-  matrix_tmp[,16] <- t(as.ts(data %>% filter(Group == "B", Subgroup == "B4"), value = variable))
-  matrix_tmp[,17] <- t(as.ts(data %>% filter(Group == "B", Subgroup == "B5"), value = variable))
-  matrix_tmp[,18] <- t(as.ts(data %>% filter(Group == "B", Subgroup == "B6"), value = variable))
-  matrix_tmp[,19] <- t(as.ts(data %>% filter(Group == "B", Subgroup == "B7"), value = variable))
-  matrix_tmp[,20] <- t(as.ts(data %>% filter(Group == "B", Subgroup == "B8"), value = variable))
-  matrix_tmp[,21] <- t(as.ts(data %>% filter(Group == "B", Subgroup == "B9"), value = variable))
-  matrix_tmp[,22] <- t(as.ts(data %>% filter(Group == "C", Subgroup == "C1"), value = variable))
-  matrix_tmp[,23] <- t(as.ts(data %>% filter(Group == "C", Subgroup == "C2"), value = variable))
-  matrix_tmp[,24] <- t(as.ts(data %>% filter(Group == "C", Subgroup == "C3"), value = variable))
-  matrix_tmp[,25] <- t(as.ts(data %>% filter(Group == "D", Subgroup == "D1"), value = variable))
-  matrix_tmp[,26] <- t(as.ts(data %>% filter(Group == "D", Subgroup == "D2"), value = variable))
-  matrix_tmp[,27] <- t(as.ts(data %>% filter(Group == "D", Subgroup == "D3"), value = variable))
-  matrix_tmp[,28] <- t(as.ts(data %>% filter(Group == "D", Subgroup == "D4"), value = variable))
-  matrix_tmp[,29] <- t(as.ts(data %>% filter(Group == "D", Subgroup == "D5"), value = variable))
-  matrix_tmp[,30] <- t(as.ts(data %>% filter(Group == "D", Subgroup == "D6"), value = variable))
+  matrix_tmp[,1] <- (data %>% filter(is_aggregated(Group), is_aggregated(Subgroup)))[[variable]]
+  matrix_tmp[,2] <- (data %>% filter(Group == "A", is_aggregated(Subgroup)))[[variable]]
+  matrix_tmp[,3] <- (data %>% filter(Group == "B", is_aggregated(Subgroup)))[[variable]]
+  matrix_tmp[,4] <- (data %>% filter(Group == "C", is_aggregated(Subgroup)))[[variable]]
+  matrix_tmp[,5] <- (data %>% filter(Group == "D", is_aggregated(Subgroup)))[[variable]]
+  matrix_tmp[,5] <- (data %>% filter(Group == "D", is_aggregated(Subgroup)))[[variable]]
+  matrix_tmp[,6] <- (data %>% filter(Group == "A", Subgroup == "A1"))[[variable]]
+  matrix_tmp[,7] <- (data %>% filter(Group == "A", Subgroup == "A2"))[[variable]]
+  matrix_tmp[,8] <- (data %>% filter(Group == "A", Subgroup == "A3"))[[variable]]
+  matrix_tmp[,9] <- (data %>% filter(Group == "A", Subgroup == "A4"))[[variable]]
+  matrix_tmp[,10] <- (data %>% filter(Group == "A", Subgroup == "A5"))[[variable]]
+  matrix_tmp[,11] <- (data %>% filter(Group == "A", Subgroup == "A6"))[[variable]]
+  matrix_tmp[,12] <- (data %>% filter(Group == "A", Subgroup == "A7"))[[variable]]
+  matrix_tmp[,13] <- (data %>% filter(Group == "B", Subgroup == "B1"))[[variable]]
+  matrix_tmp[,14] <- (data %>% filter(Group == "B", Subgroup == "B2"))[[variable]]
+  matrix_tmp[,15] <- (data %>% filter(Group == "B", Subgroup == "B3"))[[variable]]
+  matrix_tmp[,16] <- (data %>% filter(Group == "B", Subgroup == "B4"))[[variable]]
+  matrix_tmp[,17] <- (data %>% filter(Group == "B", Subgroup == "B5"))[[variable]]
+  matrix_tmp[,18] <- (data %>% filter(Group == "B", Subgroup == "B6"))[[variable]]
+  matrix_tmp[,19] <- (data %>% filter(Group == "B", Subgroup == "B7"))[[variable]]
+  matrix_tmp[,20] <- (data %>% filter(Group == "B", Subgroup == "B8"))[[variable]]
+  matrix_tmp[,21] <- (data %>% filter(Group == "B", Subgroup == "B9"))[[variable]]
+  matrix_tmp[,22] <- (data %>% filter(Group == "C", Subgroup == "C1"))[[variable]]
+  matrix_tmp[,23] <- (data %>% filter(Group == "C", Subgroup == "C2"))[[variable]]
+  matrix_tmp[,24] <- (data %>% filter(Group == "C", Subgroup == "C3"))[[variable]]
+  matrix_tmp[,25] <- (data %>% filter(Group == "D", Subgroup == "D1"))[[variable]]
+  matrix_tmp[,26] <- (data %>% filter(Group == "D", Subgroup == "D2"))[[variable]]
+  matrix_tmp[,27] <- (data %>% filter(Group == "D", Subgroup == "D3"))[[variable]]
+  matrix_tmp[,28] <- (data %>% filter(Group == "D", Subgroup == "D4"))[[variable]]
+  matrix_tmp[,29] <- (data %>% filter(Group == "D", Subgroup == "D5"))[[variable]]
+  matrix_tmp[,30] <- (data %>% filter(Group == "D", Subgroup == "D6"))[[variable]]
   colnames(matrix_tmp) <- c("T", "A", "B", "C", "D", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "C1", "C2", "C3", "D1", "D2", "D3", "D4", "D5", "D6")
 
   return(matrix_tmp)
@@ -113,25 +113,37 @@ test <- NULL
 
 TrainingProportion = 0.9
 
-values$min10 <- to_ts(min10, "Power")
-values$min20 <- to_ts(min20, "Power")
-values$min30 <- to_ts(min30, "Power")
-values$hr1 <- to_ts(hr1, "Power")
+values$k1 <- to_matrix_for_ts(min10, "Power")
+values$k1 <- ts(values$k1, frequency = 6)
+values$k2 <- to_matrix_for_ts(min20, "Power")
+values$k2 <- ts(values$k2, frequency = 3)
+values$k3 <- to_matrix_for_ts(min30, "Power")
+values$k3 <- ts(values$k3, frequency = 2)
+values$k6 <- to_matrix_for_ts(hr1, "Power")
+values$k6 <- ts(values$k6, frequency = 1)
 
-base$min10 <- to_ts(fc10_benchmark, ".mean")
-base$min20 <- to_ts(fc20_benchmark, ".mean")
-base$min30 <- to_ts(fc30_benchmark, ".mean")
-base$hr1 <- to_ts(fc1_benchmark, ".mean")
+base$k1 <- to_matrix_for_ts(fc10_lr, ".mean")
+base$k1 <- ts(base$k1, frequency = 6, start = c(47304, 1))
+base$k2 <- to_matrix_for_ts(fc20_lr, ".mean")
+base$k2 <- ts(base$k2, frequency = 3, start = c(47304, 1))
+base$k3 <- to_matrix_for_ts(fc30_lr, ".mean")
+base$k3 <- ts(base$k3, frequency = 2, start = c(47304, 1))
+base$k6 <- to_matrix_for_ts(fc1_lr, ".mean")
+base$k6 <- ts(base$k6, frequency = 1, start = c(47304, 1))
 
-residuals$min10 <- to_ts(fc10_benchmark_residuals, ".resid")
-residuals$min20 <- to_ts(fc20_benchmark_residuals, ".resid")
-residuals$min30 <- to_ts(fc30_benchmark_residuals, ".resid")
-residuals$hr1 <- to_ts(fc1_benchmark_residuals, ".resid")
+residuals$k1 <- to_matrix_for_ts(fc10_lr_residuals, ".resid")
+residuals$k1 <- ts(residuals$k1, frequency = 6)
+residuals$k2 <- to_matrix_for_ts(fc20_lr_residuals, ".resid")
+residuals$k2 <- ts(residuals$k2, frequency = 3)
+residuals$k3 <- to_matrix_for_ts(fc30_lr_residuals, ".resid")
+residuals$k3 <- ts(residuals$k3, frequency = 2)
+residuals$k6 <- to_matrix_for_ts(fc1_lr_residuals, ".resid")
+residuals$k6 <- ts(residuals$k6, frequency = 1)
 
-test$min10 <- values$min10[-c(1:ceiling(dim(values$min10)[1]*TrainingProportion)), ]
-test$min20 <- values$min20[-c(1:ceiling(dim(values$min20)[1]*TrainingProportion)), ]
-test$min30 <- values$min30[-c(1:ceiling(dim(values$min30)[1]*TrainingProportion)), ]
-test$hr1 <- values$hr1[-c(1:ceiling(dim(values$hr1)[1]*TrainingProportion)), ]
+test$k1 <- values$k1[-c(1:ceiling(dim(values$k1)[1]*TrainingProportion)), ]
+test$k2 <- values$k2[-c(1:ceiling(dim(values$k2)[1]*TrainingProportion)), ]
+test$k3 <- values$k3[-c(1:ceiling(dim(values$k3)[1]*TrainingProportion)), ]
+test$k6 <- values$k6[-c(1:ceiling(dim(values$k6)[1]*TrainingProportion)), ]
 
 base <- t(do.call(rbind, rev(base)))
 res <- t(do.call(rbind, rev(residuals)))
@@ -139,17 +151,30 @@ test <- t(do.call(rbind, rev(test)))
 
 obs <- values
 
-C <- matrix(c(rep(1,25),
-              rep(1,7), rep(0,18),
-              rep(0,7), rep(1,9), rep(0,9),
-              rep(0,16), rep(1,3), rep(0,6),
-              rep(0,19), rep(1,6)), byrow = TRUE, nrow = 5)
+## Balanced hierarchy
+#         T
+#    |--------|
+#    A        B
+#  |---|   |--|--|
+# AA   AB  BA BB BC
+# Names of the bottom level variables
+data_bts <- data.frame(X1 = c("A", "A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B", "B", "B", "B", "C", "C", "C", "D", "D", "D", "D", "D", "D"),
+                       X2 = c("1", "2", "3", "4", "5", "6", "7", "1", "2", "3", "4", "5", "6", "7", "8", "9", "1", "2", "3", "1", "2", "3", "4", "5", "6"),
+                       stringsAsFactors = FALSE)
+# Cross-sectional aggregation matrix
+C <- Cmatrix(~ X1 / X2, data_bts, sep = "")
+
+#C <- matrix(c(rep(1,25),
+#              rep(1,7), rep(0,18),
+#              rep(0,7), rep(1,9), rep(0,9),
+#              rep(0,16), rep(1,3), rep(0,6),
+#              rep(0,19), rep(1,6)), byrow = TRUE, nrow = 5)
 
 # set first NA's to 0 (first observation since using)
-base[is.na(base)] <- 0
-res[is.na(res)] <- 0
-test[is.na(test)] <- 0
-obs[is.na(obs)] <- 0
+#base[is.na(base)] <- 0
+#res[is.na(res)] <- 0
+#test[is.na(test)] <- 0
+#obs[is.na(obs)] <- 0
 
 FoReco_data <- list(base = base,
                     test = test,
@@ -207,8 +232,8 @@ ite_recf <- iterec(FoReco_data$base,
                    res = FoReco_data$res, start_rec = "thf")$recf
 
 ite_score <- score_index(recf = ite_recf,
-                         base = FoReco_data$base,
-                         test = FoReco_data$test, m = 6, nb = 25)
+                         base = base,
+                         test = test, m = 6, nb = 25)
 
 write.csv(ite_score,"ite_score.csv", row.names = TRUE)
 
