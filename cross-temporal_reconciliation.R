@@ -104,6 +104,28 @@ min20 <- readRDS(file = "min20.rds")
 min30 <- readRDS(file = "min30.rds")
 hr1 <- readRDS(file = "hr1.rds")
 
+
+#### change means to sums for temporal hierarchy ####
+min20 <- min20 %>% mutate(Power = Power * 2)
+min30 <- min30 %>% mutate(Power = Power * 3)
+hr1 <- hr1 %>% mutate(Power = Power * 6)
+
+fc20_lr <- fc20_lr %>% mutate(.mean = .mean * 2)
+fc30_lr <- fc30_lr %>% mutate(.mean = .mean * 3)
+fc1_lr <- fc1_lr %>% mutate(.mean = .mean * 6)
+
+fc20_benchmark <- fc20_benchmark %>% mutate(.mean = .mean * 2)
+fc30_benchmark <- fc30_benchmark %>% mutate(.mean = .mean * 3)
+fc1_benchmark <- fc1_benchmark %>% mutate(.mean = .mean * 6)
+
+fc20_lr_residuals <- fc20_lr_residuals %>% mutate(.resid = .resid * 2)
+fc30_lr_residuals <- fc30_lr_residuals %>% mutate(.resid = .resid * 3)
+fc1_lr_residuals <- fc1_lr_residuals %>% mutate(.resid = .resid * 6)
+
+fc20_lr_benchmark <- fc20_lr_residuals %>% mutate(.resid = .resid * 2)
+fc30_lr_benchmark <- fc30_lr_residuals %>% mutate(.resid = .resid * 3)
+fc1_lr_benchmark <- fc1_lr_residuals %>% mutate(.resid = .resid * 6)
+
 #### prep for reconciliation ####
 
 values <- NULL
@@ -122,22 +144,22 @@ values$k3 <- ts(values$k3, frequency = 2)
 values$k6 <- to_matrix_for_ts(hr1, "Power")
 values$k6 <- ts(values$k6, frequency = 1)
 
-base$k1 <- to_matrix_for_ts(fc10_lr, ".mean")
+base$k1 <- to_matrix_for_ts(fc10_benchmark, ".mean")
 base$k1 <- ts(base$k1, frequency = 6, start = c(47304, 1))
-base$k2 <- to_matrix_for_ts(fc20_lr, ".mean")
+base$k2 <- to_matrix_for_ts(fc20_benchmark, ".mean")
 base$k2 <- ts(base$k2, frequency = 3, start = c(47304, 1))
-base$k3 <- to_matrix_for_ts(fc30_lr, ".mean")
+base$k3 <- to_matrix_for_ts(fc30_benchmark, ".mean")
 base$k3 <- ts(base$k3, frequency = 2, start = c(47304, 1))
-base$k6 <- to_matrix_for_ts(fc1_lr, ".mean")
+base$k6 <- to_matrix_for_ts(fc1_benchmark, ".mean")
 base$k6 <- ts(base$k6, frequency = 1, start = c(47304, 1))
 
-residuals$k1 <- to_matrix_for_ts(fc10_lr_residuals, ".resid")
+residuals$k1 <- to_matrix_for_ts(fc10_benchmark_residuals, ".resid")
 residuals$k1 <- ts(residuals$k1, frequency = 6)
-residuals$k2 <- to_matrix_for_ts(fc20_lr_residuals, ".resid")
+residuals$k2 <- to_matrix_for_ts(fc20_benchmark_residuals, ".resid")
 residuals$k2 <- ts(residuals$k2, frequency = 3)
-residuals$k3 <- to_matrix_for_ts(fc30_lr_residuals, ".resid")
+residuals$k3 <- to_matrix_for_ts(fc30_benchmark_residuals, ".resid")
 residuals$k3 <- ts(residuals$k3, frequency = 2)
-residuals$k6 <- to_matrix_for_ts(fc1_lr_residuals, ".resid")
+residuals$k6 <- to_matrix_for_ts(fc1_benchmark_residuals, ".resid")
 residuals$k6 <- ts(residuals$k6, frequency = 1)
 
 test$k1 <- values$k1[-c(1:ceiling(dim(values$k1)[1]*TrainingProportion)), ]
@@ -216,13 +238,15 @@ write.csv(tcs_score,"tcs_score.csv", row.names = TRUE)
 
 #### Heuristic first-cross-sectional-then-temporal cross-temporal reconciliation using t-acov + cs-shr (Di Fonzo and Girolimetto, 2020) ####
 
-cst_recf <- cstrec(FoReco_data$base, m = 6, C = FoReco_data$C,
+cst_recf <- as.matrix(cstrec(FoReco_data$base, m = 6, C = FoReco_data$C,
                    thf_comb = "acov", hts_comb = "shr",
-                   res = FoReco_data$res)$recf
+                   res = FoReco_data$res)$recf)
 
-tcs_score <- score_index(recf = cst_recf,
+cst_score <- score_index(recf = cst_recf,
                          base = FoReco_data$base,
                          test = FoReco_data$test, m = 6, nb = 25)
+
+write.csv(tcs_score,"cst_score.csv", row.names = TRUE)
 
 #### Iterative cross-temporal reconciliation (Di Fonzo and Girolimetto, 2020) ####
 
