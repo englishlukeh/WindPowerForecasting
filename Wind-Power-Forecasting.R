@@ -1210,6 +1210,16 @@ print(optimal)
                   forecast(new_data = hr1_test %>%
                              group_by(Group, Subgroup) %>%
                              dplyr::slice(n = i+1)))
+    
+    # extract fitted and residuals
+    if (i == ceiling(N*TrainingProportion)){
+      fitted <- fit_total %>%
+        fitted()
+      residuals <- fit_total %>%
+        residuals()
+      saveRDS(fitted, file = "fc1_gb_fitted.rds")
+      saveRDS(residuals, file = "fc1_gb_residuals.rds")
+    }
   }
 
   saveRDS(fc1_gb, file = "fc1_gb.rds")
@@ -1262,6 +1272,16 @@ print(optimal)
                   forecast(new_data = min30_test %>%
                              group_by(Group, Subgroup) %>%
                              dplyr::slice(n = i+1)))
+    
+    # extract fitted and residuals
+    if (i == ceiling(N*TrainingProportion)){
+      fitted <- fit_total %>%
+        fitted()
+      residuals <- fit_total %>%
+        residuals()
+      saveRDS(fitted, file = "fc30_gb_fitted.rds")
+      saveRDS(residuals, file = "fc30_gb_residuals.rds")
+    }
   }
 
   saveRDS(fc30_gb, file = "fc30_gb.rds")
@@ -1313,6 +1333,16 @@ print(optimal)
                   forecast(new_data = min20_test %>%
                              group_by(Group, Subgroup) %>%
                              dplyr::slice(n = i+1)))
+    
+    # extract fitted and residuals
+    if (i == ceiling(N*TrainingProportion)){
+      fitted <- fit_total %>%
+        fitted()
+      residuals <- fit_total %>%
+        residuals()
+      saveRDS(fitted, file = "fc20_gb_fitted.rds")
+      saveRDS(residuals, file = "fc20_gb_residuals.rds")
+    }
   }
 
   saveRDS(fc20_gb, file = "fc20_gb.rds")
@@ -1364,6 +1394,16 @@ print(optimal)
                   forecast(new_data = min10_test %>%
                              group_by(Group, Subgroup) %>%
                              dplyr::slice(n = i+1)))
+    
+    # extract fitted and residuals
+    if (i == ceiling(N*TrainingProportion)){
+      fitted <- fit_total %>%
+        fitted()
+      residuals <- fit_total %>%
+        residuals()
+      saveRDS(fitted, file = "fc10_gb_fitted.rds")
+      saveRDS(residuals, file = "fc10_gb_residuals.rds")
+    }
   }
 
   saveRDS(fc10_gb, file = "fc10_gb.rds")
@@ -1377,6 +1417,7 @@ print(optimal)
   fc30_lr <- readRDS(file = "fc30_lr.rds")
   fc30_gb <- readRDS(file = "fc30_gb.rds")
 
+  fc1_resid <- readRDS(file = "fc1_gb_residuals.rds")
 
 #### Compare benchmark to linear regression and lightgbm - 10 minutely ####
 
@@ -1544,7 +1585,7 @@ accuracy30_gb_L2 <- accuracy30_gb_error %>%
 accuracy1_benchmark_error <- fc1_benchmark %>%
   accuracy(hr1_power) %>%
   group_by(.model, Group, Subgroup)  %>%
-  summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
+  summarise(TotalRMSE = mean(RMSE), TotalMAE = mean(MAE))
 
 # Compute benchmark accuracy for Level 0
 accuracy1_benchmark_L0 <- accuracy1_benchmark_error %>%
@@ -1554,18 +1595,18 @@ accuracy1_benchmark_L0 <- accuracy1_benchmark_error %>%
 accuracy1_benchmark_L1 <- accuracy1_benchmark_error %>%
   filter(is_aggregated(Subgroup), !is_aggregated(Group)) %>%
   group_by(.model) %>%
-  summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
-
+  summarise(TotalRMSE = mean(TotalRMSE), TotalMAE = mean(TotalMAE))
+  
 # Compute benchmark accuracy for Level 2
 accuracy1_benchmark_L2 <- accuracy1_benchmark_error %>%
   filter(!is_aggregated(Subgroup), !is_aggregated(Group)) %>%
   group_by(.model) %>%
-  summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
+  summarise(TotalRMSE = mean(TotalRMSE), TotalMAE = mean(TotalMAE))
 
 accuracy1_error <- fc1_lr %>%
   accuracy(hr1_power) %>%
   group_by(.model, Group, Subgroup)  %>%
-  summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
+  summarise(TotalRMSE = mean(RMSE), TotalMAE = mean(MAE))
 
 # Compute linear regression accuracy for Level 0
 accuracy1_L0 <- accuracy1_error %>%
@@ -1575,18 +1616,18 @@ accuracy1_L0 <- accuracy1_error %>%
 accuracy1_L1 <- accuracy1_error %>%
   filter(is_aggregated(Subgroup), !is_aggregated(Group)) %>%
   group_by(.model) %>%
-  summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
+  summarise(TotalRMSE = mean(TotalRMSE), TotalMAE = mean(TotalMAE))
 
 # Compute linear regression accuracy for Level 2
 accuracy1_L2 <- accuracy1_error %>%
   filter(!is_aggregated(Subgroup), !is_aggregated(Group)) %>%
   group_by(.model) %>%
-  summarise(TotalMASE = mean(TotalMASE), TotalRMSSE = mean(TotalRMSSE))
+  summarise(TotalRMSE = mean(TotalRMSE), TotalMAE = mean(TotalMAE))
 
 accuracy1_gb_error <- fc1_gb %>%
   accuracy(hr1_power) %>%
   group_by(.model, Group, Subgroup)  %>%
-  summarise(TotalMASE = mean(MASE), TotalRMSSE = mean(RMSSE))
+  summarise(TotalRMSE = mean(RMSE), TotalMAE = mean(MAE))
 
 # Compute lightgbm accuracy for Level 0
 accuracy1_gb_L0 <- accuracy1_gb_error %>%
@@ -1698,17 +1739,17 @@ min10_power %>% filter(Group == "D", is_aggregated(Subgroup)) %>% as.data.frame(
 
 min10_power %>% filter(is_aggregated(Group), is_aggregated(Subgroup)) %>% as.data.frame() %>% select(Power) %>% summary()
 
-plota <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "A") %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
-plotb <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "B") %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
-plotc <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "C") %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
-plotd <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "D") %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
+plota <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "A") %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
+plotb <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "B") %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
+plotc <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "C") %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
+plotd <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "D") %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
 
 ggpubr::ggarrange(plota, plotb, plotc, plotd,
           labels = c("A", "B", "C", "D"),
           ncol = 1, nrow = 4)
 
-plotabcdnoagg <- hr1_power %>% filter(is_aggregated(Subgroup), !is_aggregated(Group)) %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
-plotabcdagg <- hr1_power %>% filter(is_aggregated(Group), is_aggregated(Subgroup)) %>% filter_index("2021-01-01"~"2021-01-07") %>% autoplot()
+plotabcdnoagg <- hr1_power %>% filter(is_aggregated(Subgroup), !is_aggregated(Group)) %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
+plotabcdagg <- hr1_power %>% filter(is_aggregated(Group), is_aggregated(Subgroup)) %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
 
 ggpubr::ggarrange(plotabcdnoagg, plotabcdagg,
                   labels = c("A", "B"),
