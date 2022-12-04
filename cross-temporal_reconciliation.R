@@ -867,13 +867,15 @@ id <- which(simplify2array(strsplit(colnames(FoReco_data$base),
 hfbts <- FoReco_data$base[-c(1:5), id]
 obj <- ctbu(Bmat = hfbts, m = 6, C = FoReco_data$C)
 rownames(obj) <- rownames(FoReco_data$base)
+# have to set this since the FoReco package has a bug that changes column names for some reason
+colnames(obj) <- colnames(thf_recf)
 
 # Compute rMAE and rRMSE
-oct_recf_error <- abs(oct_recf - test)
-oct_recf_error_squared <- abs(oct_recf - test)^2
+obj_error <- abs(obj- test)
+obj_error_squared <- abs(obj - test)^2
 
-rMAE_bu_ct <- compute_rMAE(oct_recf_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
-rRMSE_bu_ct <- compute_rRMSE(oct_recf_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
+rMAE_bu_ct <- compute_rMAE(obj_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
+rRMSE_bu_ct <- compute_rRMSE(obj_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
 write.csv(rMAE_bu_ct,"rMAE_bu_ct.csv", row.names = TRUE)
 write.csv(rRMSE_bu_ct,"rRMSE_bu_ct.csv", row.names = TRUE)
@@ -1029,13 +1031,55 @@ id <- which(simplify2array(strsplit(colnames(FoReco_data$base),
 hfbts <- FoReco_data$base[-c(1:5), id]
 obj <- ctbu(Bmat = hfbts, m = 6, C = FoReco_data$C)
 rownames(obj) <- rownames(FoReco_data$base)
+# have to set this since the FoReco package has a bug that changes column names for some reason
+colnames(obj) <- colnames(thf_recf)
 
 # Compute rMAE_gb and rRMSE_gb
-oct_recf_error <- abs(oct_recf - test)
-oct_recf_error_squared <- abs(oct_recf - test)^2
+obj_error <- abs(obj - test)
+obj_error_squared <- abs(obj - test)^2
 
-rMAE_gb_bu_ct <- compute_rMAE(oct_recf_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
-rRMSE_gb_bu_ct <- compute_rRMSE(oct_recf_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
+rMAE_gb_bu_ct <- compute_rMAE(obj_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
+rRMSE_gb_bu_ct <- compute_rRMSE(obj_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
 write.csv(rMAE_gb_bu_ct,"rMAE_gb_bu_ct.csv", row.names = TRUE)
 write.csv(rRMSE_gb_bu_ct,"rRMSE_gb_bu_ct.csv", row.names = TRUE)
+
+#### Nemenyi Test ####
+library(tsutils)
+
+# cross-sec
+
+nem_cross_sec <- read_excel("Nemenyi-Cross-Sectional.xlsx")
+
+
+x_rMAE <- as.matrix(nem_cross_sec[1:12,])
+x_rRMSE <- as.matrix(nem_cross_sec[14:25,])
+
+colnames(x_rMAE) <- colnames(nem_cross_sec)
+colnames(x_rRMSE) <- colnames(nem_cross_sec)
+
+x_LR_rMAE <- x_rMAE[,1:6]
+x_LR_rRMSE <- x_rRMSE[,1:6]
+
+x_gb_rMAE <- x_rMAE[,7:12]
+x_gb_rRMSE <- x_rRMSE[,7:12]
+
+nemenyi(x_rRMSE, plottype = "mcb")
+
+# now cross-temp
+nem_cross_temp <- read_excel("Nemenyi-Cross-Temporal.xlsx")
+
+
+x_rMAE <- as.matrix(nem_cross_sec[1:12,])
+x_rRMSE <- as.matrix(nem_cross_sec[14:25,])
+
+colnames(x_rMAE) <- colnames(nem_cross_temp)
+colnames(x_rRMSE) <- colnames(nem_cross_temp)
+
+x_LR_rMAE <- x_rMAE[,1:6]
+x_LR_rRMSE <- x_rRMSE[,1:6]
+
+x_gb_rMAE <- x_rMAE[,7:12]
+x_gb_rRMSE <- x_rRMSE[,7:12]
+
+nemenyi(x_rRMSE, plottype = "mcb")
