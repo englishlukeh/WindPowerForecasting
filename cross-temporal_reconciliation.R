@@ -94,7 +94,7 @@ compute_rMAE <- function(error, naive_error_10, naive_error_20, naive_error_30, 
   error[4,3] <- exp(mean(log(error_1[1])))
   
   # return matrix of rMAE
-  return(error)
+  return(list(error, error_10, error_20, error_30, error_1))
 }
 
 # function to convert rRMSE of matrix of errors
@@ -135,7 +135,7 @@ compute_rRMSE <- function(error_squared, naive_error_squared_10, naive_error_squ
   error_squared[4,3] <- exp(mean(log(error_1_squared[1])))
   
   # return matrix of rRMSE
-  return(error_squared)
+  return(list(error_squared, error_10_squared, error_20_squared, error_30_squared, error_1_squared))
 }
 
 
@@ -599,9 +599,10 @@ lr_error_squared <- (lr - test)^2
 rMAE_lr <- compute_rMAE(lr_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_lr <- compute_rRMSE(lr_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_lr,"rMAE_lr.csv", row.names = TRUE)
-write.csv(rRMSE_lr,"rRMSE_lr.csv", row.names = TRUE)
-
+write.csv(rMAE_lr[1],"rMAE_lr.csv", row.names = TRUE)
+write.csv(rRMSE_lr[1],"rRMSE_lr.csv", row.names = TRUE)
+write.csv(c(rMAE_lr[[2]],rMAE_lr[[3]],rMAE_lr[[4]],rMAE_lr[[5]]), "rMAE_lr_nemenyi.csv")
+write.csv(c(rRMSE_lr[[2]],rRMSE_lr[[3]],rRMSE_lr[[4]],rRMSE_lr[[5]]), "rRMSE_lr_nemenyi.csv")
 
 #### Compute rMAE and rRMSE of LR_bu forecast ####
 lr_bu_error <- abs(lr_bu - test)
@@ -610,8 +611,10 @@ lr_bu_error_squared <- abs(lr_bu - test)^2
 rMAE_lr_bu <- compute_rMAE(lr_bu_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_lr_bu <- compute_rRMSE(lr_bu_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_lr_bu,"rMAE_lr_bu.csv", row.names = TRUE)
-write.csv(rRMSE_lr_bu,"rRMSE_lr_bu.csv", row.names = TRUE)
+write.csv(rMAE_lr_bu[1],"rMAE_lr_bu.csv", row.names = TRUE)
+write.csv(rRMSE_lr_bu[1],"rRMSE_lr_bu.csv", row.names = TRUE)
+write.csv(c(rMAE_lr_bu[[2]],rMAE_lr_bu[[3]],rMAE_lr_bu[[4]],rMAE_lr_bu[[5]]), "rMAE_lr_bu_nemenyi.csv")
+write.csv(c(rRMSE_lr_bu[[2]],rRMSE_lr_bu[[3]],rRMSE_lr_bu[[4]],rRMSE_lr_bu[[5]]), "rRMSE_lr_bu_nemenyi.csv")
 
 
 #### Compute rMAE and rRMSE of LR_td forecast ####
@@ -621,8 +624,10 @@ lr_td_error_squared <- abs(lr_td - test)^2
 rMAE_lr_td <- compute_rMAE(lr_td_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_lr_td <- compute_rRMSE(lr_td_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_lr_td,"rMAE_lr_td.csv", row.names = TRUE)
-write.csv(rRMSE_lr_td,"rRMSE_lr_td.csv", row.names = TRUE)
+write.csv(rMAE_lr_td[1],"rMAE_lr_td.csv", row.names = TRUE)
+write.csv(rRMSE_lr_td[1],"rRMSE_lr_td.csv", row.names = TRUE)
+write.csv(c(rMAE_lr_td[[2]],rMAE_lr_td[[3]],rMAE_lr_td[[4]],rMAE_lr_td[[5]]), "rMAE_lr_td_nemenyi.csv")
+write.csv(c(rRMSE_lr_td[[2]],rRMSE_lr_td[[3]],rRMSE_lr_td[[4]],rRMSE_lr_td[[5]]), "rRMSE_lr_td_nemenyi.csv")
 
 #### Compute rMAE and rRMSE of LR_mo forecast ####
 lr_mo_error <- abs(lr_mo - test)
@@ -631,8 +636,10 @@ lr_mo_error_squared <- abs(lr_mo - test)^2
 rMAE_lr_mo <- compute_rMAE(lr_mo_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_lr_mo <- compute_rRMSE(lr_mo_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_lr_mo,"rMAE_lr_mo.csv", row.names = TRUE)
-write.csv(rRMSE_lr_mo,"rRMSE_lr_mo.csv", row.names = TRUE)
+write.csv(rMAE_lr_mo[1],"rMAE_lr_mo.csv", row.names = TRUE)
+write.csv(rRMSE_lr_mo[1],"rRMSE_lr_mo.csv", row.names = TRUE)
+write.csv(c(rMAE_lr_mo[[2]],rMAE_lr_mo[[3]],rMAE_lr_mo[[4]],rMAE_lr_mo[[5]]), "rMAE_lr_mo_nemenyi.csv")
+write.csv(c(rRMSE_lr_mo[[2]],rRMSE_lr_mo[[3]],rRMSE_lr_mo[[4]],rRMSE_lr_mo[[5]]), "rRMSE_lr_mo_nemenyi.csv")
 
 #### Compute rMAE and rRMSE of LR_ols forecast ####
 lr_ols_error <- abs(lr_ols - test)
@@ -641,8 +648,10 @@ lr_ols_error_squared <- abs(lr_ols - test)^2
 rMAE_lr_ols <- compute_rMAE(lr_ols_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_lr_ols <- compute_rRMSE(lr_ols_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_lr_ols,"rMAE_lr_ols.csv", row.names = TRUE)
-write.csv(rRMSE_lr_ols,"rRMSE_lr_ols.csv", row.names = TRUE)
+write.csv(rMAE_lr_ols[1],"rMAE_lr_ols.csv", row.names = TRUE)
+write.csv(rRMSE_lr_ols[1],"rRMSE_lr_ols.csv", row.names = TRUE)
+write.csv(c(rMAE_lr_ols[[2]],rMAE_lr_ols[[3]],rMAE_lr_ols[[4]],rMAE_lr_ols[[5]]), "rMAE_lr_ols_nemenyi.csv")
+write.csv(c(rRMSE_lr_ols[[2]],rRMSE_lr_ols[[3]],rRMSE_lr_ols[[4]],rRMSE_lr_ols[[5]]), "rRMSE_lr_ols_nemenyi.csv")
 
 #### Compute rMAE and rRMSE of LR_mint forecast ####
 lr_mint_error <- abs(lr_mint - test)
@@ -651,8 +660,10 @@ lr_mint_error_squared <- abs(lr_mint - test)^2
 rMAE_lr_mint <- compute_rMAE(lr_mint_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_lr_mint <- compute_rRMSE(lr_mint_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_lr_mint,"rMAE_lr_mint.csv", row.names = TRUE)
-write.csv(rRMSE_lr_mint,"rRMSE_lr_mint.csv", row.names = TRUE)
+write.csv(rMAE_lr_mint[1],"rMAE_lr_mint.csv", row.names = TRUE)
+write.csv(rRMSE_lr_mint[1],"rRMSE_lr_mint.csv", row.names = TRUE)
+write.csv(c(rMAE_lr_mint[[2]],rMAE_lr_mint[[3]],rMAE_lr_mint[[4]],rMAE_lr_mint[[5]]), "rMAE_lr_mint_nemenyi.csv")
+write.csv(c(rRMSE_lr_mint[[2]],rRMSE_lr_mint[[3]],rRMSE_lr_mint[[4]],rRMSE_lr_mint[[5]]), "rRMSE_lr_mint_nemenyi.csv")
 
 #### Compute rMAE and rRMSE of unreconciled gb forecast ####
 gb_error <- abs(gb - test)
@@ -661,8 +672,10 @@ gb_error_squared <- abs(gb - test)^2
 rMAE_gb <- compute_rMAE(gb_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_gb <- compute_rRMSE(gb_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_gb,"rMAE_gb.csv", row.names = TRUE)
-write.csv(rRMSE_gb,"rRMSE_gb.csv", row.names = TRUE)
+write.csv(rMAE_gb[1],"rMAE_gb.csv", row.names = TRUE)
+write.csv(rRMSE_gb[1],"rRMSE_gb.csv", row.names = TRUE)
+write.csv(c(rMAE_gb[[2]],rMAE_gb[[3]],rMAE_gb[[4]],rMAE_gb[[5]]), "rMAE_gb_nemenyi.csv")
+write.csv(c(rRMSE_gb[[2]],rRMSE_gb[[3]],rRMSE_gb[[4]],rRMSE_gb[[5]]), "rRMSE_gb_nemenyi.csv")
 
 
 #### Compute rMAE and rRMSE of gb_bu forecast ####
@@ -672,8 +685,10 @@ gb_bu_error_squared <- abs(gb_bu - test)^2
 rMAE_gb_bu <- compute_rMAE(gb_bu_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_gb_bu <- compute_rRMSE(gb_bu_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_gb_bu,"rMAE_gb_bu.csv", row.names = TRUE)
-write.csv(rRMSE_gb_bu,"rRMSE_gb_bu.csv", row.names = TRUE)
+write.csv(rMAE_gb_bu[1],"rMAE_gb_bu.csv", row.names = TRUE)
+write.csv(rRMSE_gb_bu[1],"rRMSE_gb_bu.csv", row.names = TRUE)
+write.csv(c(rMAE_gb_bu[[2]],rMAE_gb_bu[[3]],rMAE_gb_bu[[4]],rMAE_gb_bu[[5]]), "rMAE_gb_bu_nemenyi.csv")
+write.csv(c(rRMSE_gb_bu[[2]],rRMSE_gb_bu[[3]],rRMSE_gb_bu[[4]],rRMSE_gb_bu[[5]]), "rRMSE_gb_bu_nemenyi.csv")
 
 
 #### Compute rMAE and rRMSE of gb_td forecast ####
@@ -683,8 +698,10 @@ gb_td_error_squared <- abs(gb_td - test)^2
 rMAE_gb_td <- compute_rMAE(gb_td_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_gb_td <- compute_rRMSE(gb_td_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_gb_td,"rMAE_gb_td.csv", row.names = TRUE)
-write.csv(rRMSE_gb_td,"rRMSE_gb_td.csv", row.names = TRUE)
+write.csv(rMAE_gb_td[1],"rMAE_gb_td.csv", row.names = TRUE)
+write.csv(rRMSE_gb_td[1],"rRMSE_gb_td.csv", row.names = TRUE)
+write.csv(c(rMAE_gb_td[[2]],rMAE_gb_td[[3]],rMAE_gb_td[[4]],rMAE_gb_td[[5]]), "rMAE_gb_td_nemenyi.csv")
+write.csv(c(rRMSE_gb_td[[2]],rRMSE_gb_td[[3]],rRMSE_gb_td[[4]],rRMSE_gb_td[[5]]), "rRMSE_gb_td_nemenyi.csv")
 
 #### Compute rMAE and rRMSE of gb_mo forecast ####
 gb_mo_error <- abs(gb_mo - test)
@@ -693,8 +710,10 @@ gb_mo_error_squared <- abs(gb_mo - test)^2
 rMAE_gb_mo <- compute_rMAE(gb_mo_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_gb_mo <- compute_rRMSE(gb_mo_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_gb_mo,"rMAE_gb_mo.csv", row.names = TRUE)
-write.csv(rRMSE_gb_mo,"rRMSE_gb_mo.csv", row.names = TRUE)
+write.csv(rMAE_gb_mo[1],"rMAE_gb_mo.csv", row.names = TRUE)
+write.csv(rRMSE_gb_mo[1],"rRMSE_gb_mo.csv", row.names = TRUE)
+write.csv(c(rMAE_gb_mo[[2]],rMAE_gb_mo[[3]],rMAE_gb_mo[[4]],rMAE_gb_mo[[5]]), "rMAE_gb_mo_nemenyi.csv")
+write.csv(c(rRMSE_gb_mo[[2]],rRMSE_gb_mo[[3]],rRMSE_gb_mo[[4]],rRMSE_gb_mo[[5]]), "rRMSE_gb_mo_nemenyi.csv")
 
 #### Compute rMAE and rRMSE of gb_ols forecast ####
 gb_ols_error <- abs(gb_ols - test)
@@ -703,8 +722,10 @@ gb_ols_error_squared <- abs(gb_ols - test)^2
 rMAE_gb_ols <- compute_rMAE(gb_ols_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_gb_ols <- compute_rRMSE(gb_ols_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_gb_ols,"rMAE_gb_ols.csv", row.names = TRUE)
-write.csv(rRMSE_gb_ols,"rRMSE_gb_ols.csv", row.names = TRUE)
+write.csv(rMAE_gb_ols[1],"rMAE_gb_ols.csv", row.names = TRUE)
+write.csv(rRMSE_gb_ols[1],"rRMSE_gb_ols.csv", row.names = TRUE)
+write.csv(c(rMAE_gb_ols[[2]],rMAE_gb_ols[[3]],rMAE_gb_ols[[4]],rMAE_gb_ols[[5]]), "rMAE_gb_ols_nemenyi.csv")
+write.csv(c(rRMSE_gb_ols[[2]],rRMSE_gb_ols[[3]],rRMSE_gb_ols[[4]],rRMSE_gb_ols[[5]]), "rRMSE_gb_ols_nemenyi.csv")
 
 #### Compute rMAE and rRMSE of gb_mint forecast ####
 gb_mint_error <- abs(gb_mint - test)
@@ -713,8 +734,10 @@ gb_mint_error_squared <- abs(gb_mint - test)^2
 rMAE_gb_mint <- compute_rMAE(gb_mint_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_gb_mint <- compute_rRMSE(gb_mint_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_gb_mint,"rMAE_gb_mint.csv", row.names = TRUE)
-write.csv(rRMSE_gb_mint,"rRMSE_gb_mint.csv", row.names = TRUE)
+write.csv(rMAE_gb_mint[1],"rMAE_gb_mint.csv", row.names = TRUE)
+write.csv(rRMSE_gb_mint[1],"rRMSE_gb_mint.csv", row.names = TRUE)
+write.csv(c(rMAE_gb_mint[[2]],rMAE_gb_mint[[3]],rMAE_gb_mint[[4]],rMAE_gb_mint[[5]]), "rMAE_gb_mint_nemenyi.csv")
+write.csv(c(rRMSE_gb_mint[[2]],rRMSE_gb_mint[[3]],rRMSE_gb_mint[[4]],rRMSE_gb_mint[[5]]), "rRMSE_gb_mint_nemenyi.csv")
 
 #### prep for LR cross-temporal reconciliation ####
 
@@ -784,8 +807,10 @@ thf_recf_error_squared <- abs(thf_recf - test)^2
 rMAE_thf_recf <- compute_rMAE(thf_recf_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_thf_recf <- compute_rRMSE(thf_recf_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_thf_recf,"rMAE_thf_recf.csv", row.names = TRUE)
-write.csv(rRMSE_thf_recf,"rRMSE_thf_recf.csv", row.names = TRUE)
+write.csv(rMAE_thf_recf[1],"rMAE_thf_recf.csv", row.names = TRUE)
+write.csv(rRMSE_thf_recf[1],"rRMSE_thf_recf.csv", row.names = TRUE)
+write.csv(c(rMAE_thf_recf[[2]],rMAE_thf_recf[[3]],rMAE_thf_recf[[4]],rMAE_thf_recf[[5]]), "nemenyi_rMAE_thf_recf.csv")
+write.csv(c(rRMSE_thf_recf[[2]],rRMSE_thf_recf[[3]],rRMSE_thf_recf[[4]],rRMSE_thf_recf[[5]]), "nemenyi_rRMSE_thf_recf.csv")
 
 #### Heuristic first-temporal-then-cross-sectional cross-temporal reconciliation using t-wls + cs-shr (Kourentzes and Athanasopoulos, 2019) ####
 
@@ -803,8 +828,10 @@ tcs_recf_error_squared <- abs(tcs_recf - test)^2
 rMAE_tcs_recf <- compute_rMAE(tcs_recf_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_tcs_recf <- compute_rRMSE(tcs_recf_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_tcs_recf,"rMAE_tcs_recf.csv", row.names = TRUE)
-write.csv(rRMSE_tcs_recf,"rRMSE_tcs_recf.csv", row.names = TRUE)
+write.csv(rMAE_tcs_recf[1],"rMAE_tcs_recf.csv", row.names = TRUE)
+write.csv(rRMSE_tcs_recf[1],"rRMSE_tcs_recf.csv", row.names = TRUE)
+write.csv(c(rMAE_tcs_recf[[2]],rMAE_tcs_recf[[3]],rMAE_tcs_recf[[4]],rMAE_tcs_recf[[5]]), "nemenyi_rMAE_tcs_recf.csv")
+write.csv(c(rRMSE_tcs_recf[[2]],rRMSE_tcs_recf[[3]],rRMSE_tcs_recf[[4]],rRMSE_tcs_recf[[5]]), "nemenyi_rRMSE_tcs_recf.csv")
 
 #### Heuristic first-cross-sectional-then-temporal cross-temporal reconciliation using t-acov + cs-shr (Di Fonzo and Girolimetto, 2020) ####
 
@@ -822,8 +849,10 @@ cst_recf_error_squared <- abs(cst_recf - test)^2
 rMAE_cst_recf <- compute_rMAE(cst_recf_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_cst_recf <- compute_rRMSE(cst_recf_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_cst_recf,"rMAE_cst_recf.csv", row.names = TRUE)
-write.csv(rRMSE_cst_recf,"rRMSE_cst_recf.csv", row.names = TRUE)
+write.csv(rMAE_cst_recf[1],"rMAE_cst_recf.csv", row.names = TRUE)
+write.csv(rRMSE_cst_recf[1],"rRMSE_cst_recf.csv", row.names = TRUE)
+write.csv(c(rMAE_cst_recf[[2]],rMAE_cst_recf[[3]],rMAE_cst_recf[[4]],rMAE_cst_recf[[5]]), "nemenyi_rMAE_cst_recf.csv")
+write.csv(c(rRMSE_cst_recf[[2]],rRMSE_cst_recf[[3]],rRMSE_cst_recf[[4]],rRMSE_cst_recf[[5]]), "nemenyi_rRMSE_cst_recf.csv")
 
 #### Iterative cross-temporal reconciliation (Di Fonzo and Girolimetto, 2020) ####
 
@@ -842,8 +871,10 @@ ite_recf_error_squared <- abs(ite_recf - test)^2
 rMAE_ite_recf <- compute_rMAE(ite_recf_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_ite_recf <- compute_rRMSE(ite_recf_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_ite_recf,"rMAE_ite_recf.csv", row.names = TRUE)
-write.csv(rRMSE_ite_recf,"rRMSE_ite_recf.csv", row.names = TRUE)
+write.csv(rMAE_ite_recf[1],"rMAE_ite_recf.csv", row.names = TRUE)
+write.csv(rRMSE_ite_recf[1],"rRMSE_ite_recf.csv", row.names = TRUE)
+write.csv(c(rMAE_ite_recf[[2]],rMAE_ite_recf[[3]],rMAE_ite_recf[[4]],rMAE_ite_recf[[5]]), "nemenyi_rMAE_ite_recf.csv")
+write.csv(c(rRMSE_ite_recf[[2]],rRMSE_ite_recf[[3]],rRMSE_ite_recf[[4]],rRMSE_ite_recf[[5]]), "nemenyi_rRMSE_ite_recf.csv")
 
 #### Optimal cross-temporal reconciliation using bdshr (Di Fonzo and Girolimetto, 2020) ####
 oct_recf <- octrec(FoReco_data$base, m = 6, C = FoReco_data$C,
@@ -858,8 +889,10 @@ oct_recf_error_squared <- abs(oct_recf - test)^2
 rMAE_oct_recf <- compute_rMAE(oct_recf_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_oct_recf <- compute_rRMSE(oct_recf_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_oct_recf,"rMAE_oct_recf.csv", row.names = TRUE)
-write.csv(rRMSE_oct_recf,"rRMSE_oct_recf.csv", row.names = TRUE)
+write.csv(rMAE_oct_recf[1],"rMAE_oct_recf.csv", row.names = TRUE)
+write.csv(rRMSE_oct_recf[1],"rRMSE_oct_recf.csv", row.names = TRUE)
+write.csv(c(rMAE_oct_recf[[2]],rMAE_oct_recf[[3]],rMAE_oct_recf[[4]],rMAE_oct_recf[[5]]), "nemenyi_rMAE_oct_recf.csv")
+write.csv(c(rRMSE_oct_recf[[2]],rRMSE_oct_recf[[3]],rRMSE_oct_recf[[4]],rRMSE_oct_recf[[5]]), "nemenyi_rRMSE_oct_recf.csv")
 
 #### Bottom up cross-temporal reconciliation ####
 id <- which(simplify2array(strsplit(colnames(FoReco_data$base),
@@ -948,8 +981,10 @@ thf_recf_error_squared <- abs(thf_recf - test)^2
 rMAE_gb_thf_recf <- compute_rMAE(thf_recf_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_gb_thf_recf <- compute_rRMSE(thf_recf_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_gb_thf_recf,"rMAE_gb_thf_recf.csv", row.names = TRUE)
-write.csv(rRMSE_gb_thf_recf,"rRMSE_gb_thf_recf.csv", row.names = TRUE)
+write.csv(rMAE_gb_thf_recf[1],"rMAE_gb_thf_recf.csv", row.names = TRUE)
+write.csv(rRMSE_gb_thf_recf[1],"rRMSE_gb_thf_recf.csv", row.names = TRUE)
+write.csv(c(rMAE_gb_thf_recf[[2]],rMAE_gb_thf_recf[[3]],rMAE_gb_thf_recf[[4]],rMAE_gb_thf_recf[[5]]), "nemenyi_rMAE_gb_thf_recf.csv")
+write.csv(c(rRMSE_gb_thf_recf[[2]],rRMSE_gb_thf_recf[[3]],rRMSE_gb_thf_recf[[4]],rRMSE_gb_thf_recf[[5]]), "nemenyi_rRMSE_gb_thf_recf.csv")
 
 #### Heuristic first-temporal-then-cross-sectional cross-temporal reconciliation using t-wls + cs-shr (Kourentzes and Athanasopoulos, 2019) ####
 
@@ -967,8 +1002,10 @@ tcs_recf_error_squared <- abs(tcs_recf - test)^2
 rMAE_gb_tcs_recf <- compute_rMAE(tcs_recf_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_gb_tcs_recf <- compute_rRMSE(tcs_recf_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_gb_tcs_recf,"rMAE_gb_tcs_recf.csv", row.names = TRUE)
-write.csv(rRMSE_gb_tcs_recf,"rRMSE_gb_tcs_recf.csv", row.names = TRUE)
+write.csv(rMAE_gb_tcs_recf[1],"rMAE_gb_tcs_recf.csv", row.names = TRUE)
+write.csv(rRMSE_gb_tcs_recf[1],"rRMSE_gb_tcs_recf.csv", row.names = TRUE)
+write.csv(c(rMAE_gb_tcs_recf[[2]],rMAE_gb_tcs_recf[[3]],rMAE_gb_tcs_recf[[4]],rMAE_gb_tcs_recf[[5]]), "nemenyi_rMAE_gb_tcs_recf.csv")
+write.csv(c(rRMSE_gb_tcs_recf[[2]],rRMSE_gb_tcs_recf[[3]],rRMSE_gb_tcs_recf[[4]],rRMSE_gb_tcs_recf[[5]]), "nemenyi_rRMSE_gb_tcs_recf.csv")
 
 #### Heuristic first-cross-sectional-then-temporal cross-temporal reconciliation using t-acov + cs-shr (Di Fonzo and Girolimetto, 2020) ####
 
@@ -986,8 +1023,10 @@ cst_recf_error_squared <- abs(cst_recf - test)^2
 rMAE_gb_cst_recf <- compute_rMAE(cst_recf_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_gb_cst_recf <- compute_rRMSE(cst_recf_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_gb_cst_recf,"rMAE_gb_cst_recf.csv", row.names = TRUE)
-write.csv(rRMSE_gb_cst_recf,"rRMSE_gb_cst_recf.csv", row.names = TRUE)
+write.csv(rMAE_gb_cst_recf[1],"rMAE_gb_cst_recf.csv", row.names = TRUE)
+write.csv(rRMSE_gb_cst_recf[1],"rRMSE_gb_cst_recf.csv", row.names = TRUE)
+write.csv(c(rMAE_gb_cst_recf[[2]],rMAE_gb_cst_recf[[3]],rMAE_gb_cst_recf[[4]],rMAE_gb_cst_recf[[5]]), "nemenyi_rMAE_gb_cst_recf.csv")
+write.csv(c(rRMSE_gb_cst_recf[[2]],rRMSE_gb_cst_recf[[3]],rRMSE_gb_cst_recf[[4]],rRMSE_gb_cst_recf[[5]]), "nemenyi_rRMSE_gb_cst_recf.csv")
 
 #### Iterative cross-temporal reconciliation (Di Fonzo and Girolimetto, 2020) ####
 
@@ -1006,8 +1045,10 @@ ite_recf_error_squared <- abs(ite_recf - test)^2
 rMAE_gb_ite_recf <- compute_rMAE(ite_recf_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_gb_ite_recf <- compute_rRMSE(ite_recf_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_gb_ite_recf,"rMAE_gb_ite_recf.csv", row.names = TRUE)
-write.csv(rRMSE_gb_ite_recf,"rRMSE_gb_ite_recf.csv", row.names = TRUE)
+write.csv(rMAE_gb_ite_recf[1],"rMAE_gb_ite_recf.csv", row.names = TRUE)
+write.csv(rRMSE_gb_ite_recf[1],"rRMSE_gb_ite_recf.csv", row.names = TRUE)
+write.csv(c(rMAE_gb_ite_recf[[2]],rMAE_gb_ite_recf[[3]],rMAE_gb_ite_recf[[4]],rMAE_gb_ite_recf[[5]]), "nemenyi_rMAE_gb_ite_recf.csv")
+write.csv(c(rRMSE_gb_ite_recf[[2]],rRMSE_gb_ite_recf[[3]],rRMSE_gb_ite_recf[[4]],rRMSE_gb_ite_recf[[5]]), "nemenyi_rRMSE_gb_ite_recf.csv")
 
 #### Optimal cross-temporal reconciliation using bdshr (Di Fonzo and Girolimetto, 2020) ####
 oct_recf <- octrec(FoReco_data$base, m = 6, C = FoReco_data$C,
@@ -1022,8 +1063,10 @@ oct_recf_error_squared <- abs(oct_recf - test)^2
 rMAE_gb_oct_recf <- compute_rMAE(oct_recf_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_gb_oct_recf <- compute_rRMSE(oct_recf_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_gb_oct_recf,"rMAE_gb_oct_recf.csv", row.names = TRUE)
-write.csv(rRMSE_gb_oct_recf,"rRMSE_gb_oct_recf.csv", row.names = TRUE)
+write.csv(rMAE_gb_oct_recf[1],"rMAE_gb_oct_recf.csv", row.names = TRUE)
+write.csv(rRMSE_gb_oct_recf[1],"rRMSE_gb_oct_recf.csv", row.names = TRUE)
+write.csv(c(rMAE_gb_oct_recf[[2]],rMAE_gb_oct_recf[[3]],rMAE_gb_oct_recf[[4]],rMAE_gb_oct_recf[[5]]), "nemenyi_rMAE_gb_oct_recf.csv")
+write.csv(c(rRMSE_gb_oct_recf[[2]],rRMSE_gb_oct_recf[[3]],rRMSE_gb_oct_recf[[4]],rRMSE_gb_oct_recf[[5]]), "nemenyi_rRMSE_gb_oct_recf.csv")
 
 #### Bottom up cross-temporal reconciliation ####
 id <- which(simplify2array(strsplit(colnames(FoReco_data$base),
@@ -1052,11 +1095,11 @@ library(tsutils)
 nem_cross_sec <- read_excel("Nemenyi-Cross-Sectional.xlsx")
 
 
-x_rMAE <- as.matrix(nem_cross_sec[1:12,])
-x_rRMSE <- as.matrix(nem_cross_sec[14:25,])
+x_rMAE <- as.matrix(nem_cross_sec[,1:12])
+x_rRMSE <- as.matrix(nem_cross_sec[,13:24])
 
-colnames(x_rMAE) <- colnames(nem_cross_sec)
-colnames(x_rRMSE) <- colnames(nem_cross_sec)
+colnames(x_rMAE) <- colnames(nem_cross_sec[1:12])
+colnames(x_rRMSE) <- colnames(nem_cross_sec[13:24])
 
 x_LR_rMAE <- x_rMAE[,1:6]
 x_LR_rRMSE <- x_rRMSE[,1:6]
@@ -1064,17 +1107,16 @@ x_LR_rRMSE <- x_rRMSE[,1:6]
 x_gb_rMAE <- x_rMAE[,7:12]
 x_gb_rRMSE <- x_rRMSE[,7:12]
 
-nemenyi(x_rRMSE, plottype = "mcb")
+nemenyi(x_LR_rRMSE, plottype = "mcb")
 
 # now cross-temp
 nem_cross_temp <- read_excel("Nemenyi-Cross-Temporal.xlsx")
 
+x_rMAE <- as.matrix(nem_cross_temp[,1:12])
+x_rRMSE <- as.matrix(nem_cross_temp[,13:24])
 
-x_rMAE <- as.matrix(nem_cross_sec[1:12,])
-x_rRMSE <- as.matrix(nem_cross_sec[14:25,])
-
-colnames(x_rMAE) <- colnames(nem_cross_temp)
-colnames(x_rRMSE) <- colnames(nem_cross_temp)
+colnames(x_rMAE) <- colnames(nem_cross_temp[1:12])
+colnames(x_rRMSE) <- colnames(nem_cross_temp[13:24])
 
 x_LR_rMAE <- x_rMAE[,1:6]
 x_LR_rRMSE <- x_rRMSE[,1:6]
@@ -1082,4 +1124,4 @@ x_LR_rRMSE <- x_rRMSE[,1:6]
 x_gb_rMAE <- x_rMAE[,7:12]
 x_gb_rRMSE <- x_rRMSE[,7:12]
 
-nemenyi(x_rRMSE, plottype = "mcb")
+nemenyi(x_LR_rMAE, plottype = "mcb")
