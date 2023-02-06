@@ -89,7 +89,7 @@ min10_power <- min10_power %>%
 # set the proportion of training set
 TrainingProportion <- 0.90
 # set number of threads
-numThreads = 4;
+numThreads = 3;
 
 library(ggpubr, include.only = 'ggarrange') # include one function
 
@@ -112,7 +112,7 @@ for (val in node_names) {
   geom_point() +
   labs(x = "Wind Speed (m/s)",
        y = "Average Power (kW)", title = paste("Hourly Data, Turbine:", val))
-
+  tmp_plot + theme(text=element_text(size=20))
   ggsave(Filename, tmp_plot)
 }
 
@@ -126,7 +126,7 @@ for (val in node_names) {
     geom_point() +
     labs(x = "Wind Speed (m/s)",
          y = "Average Power (kW)", title = paste("10-Minutely Data, Turbine:", val))
-
+  tmp_plot + theme(text=element_text(size=20))
   ggsave(Filename, tmp_plot)
 }
 
@@ -214,7 +214,7 @@ fc10_benchmark <- NULL;
 registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-fc10_benchmark <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
+fc10_benchmark <- foreach(i = seq(ceiling(N*TrainingProportion),N-6,6), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
   gc()
 
@@ -228,7 +228,7 @@ fc10_benchmark <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine
   fc_benchmark <- fc_benchmark %>%
     bind_rows(min10_tr_benchmark %>%
                 model(naive_model = NAIVE(Power)) %>%
-                forecast(h=1))
+                forecast(h=6))
   # extract fitted and residuals
   if (i == ceiling(N*TrainingProportion)){
     mod_tmp <- min10_tr_benchmark %>%
@@ -260,7 +260,7 @@ fc20_benchmark <- NULL;
 registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-fc20_benchmark <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
+fc20_benchmark <- foreach(i = seq(ceiling(N*TrainingProportion),N-3,3), .combine = bind_rows, .packages = c("fpp3")) %dopar%
   {
 
     gc()
@@ -275,7 +275,7 @@ fc20_benchmark <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine
     fc_benchmark <- fc_benchmark %>%
       bind_rows(min20_tr_benchmark %>%
                   model(naive_model = NAIVE(Power)) %>%
-                  forecast(h=1))
+                  forecast(h=3))
     # extract fitted and residuals
     if (i == ceiling(N*TrainingProportion)){
       mod_tmp <- min20_tr_benchmark %>%
@@ -308,7 +308,7 @@ fc30_benchmark <- NULL;
 registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-fc30_benchmark <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
+fc30_benchmark <- foreach(i = seq(ceiling(N*TrainingProportion),N-2,2), .combine = bind_rows, .packages = c("fpp3")) %dopar%
   {
     gc()
 
@@ -322,7 +322,7 @@ fc30_benchmark <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine
     fc_benchmark <- fc_benchmark %>%
       bind_rows(min30_tr_benchmark %>%
                   model(naive_model = NAIVE(Power)) %>%
-                  forecast(h=1))
+                  forecast(h=2))
     # extract fitted and residuals
     if (i == ceiling(N*TrainingProportion)){
       mod_tmp <- min30_tr_benchmark %>%
@@ -448,12 +448,22 @@ min10 <- min10 %>% mutate(
   `lag_wind4` = lag(Wind_Speed, 4),
   `lag_wind5` = lag(Wind_Speed, 5),
   `lag_wind6` = lag(Wind_Speed, 6),
+  `lag_wind7` = lag(Wind_Speed, 7),
+  `lag_wind8` = lag(Wind_Speed, 8),
+  `lag_wind9` = lag(Wind_Speed, 9),
+  `lag_wind10` = lag(Wind_Speed, 10),
+  `lag_wind11` = lag(Wind_Speed, 11),
   `lag_power1` = lag(Power, 1),
   `lag_power2` = lag(Power, 2),
   `lag_power3` = lag(Power, 3),
   `lag_power4` = lag(Power, 4),
   `lag_power5` = lag(Power, 5),
   `lag_power6` = lag(Power, 6),
+  `lag_power7` = lag(Power, 7),
+  `lag_power8` = lag(Power, 8),
+  `lag_power9` = lag(Power, 9),
+  `lag_power10` = lag(Power, 10),
+  `lag_power11` = lag(Power, 11),
   `is_q1` = as.integer(quarter(Time)==1),
   `is_q2` = as.integer(quarter(Time)==2),
   `is_q3` = as.integer(quarter(Time)==3),
@@ -480,6 +490,109 @@ min10 <- min10 %>% mutate(
   `is_20` = as.integer(hour(Time) == 20),
   `is_21` = as.integer(hour(Time) == 21),
   `is_22` = as.integer(hour(Time) == 22)
+)
+
+min10 <- min10 %>% mutate(
+  `WMA2_l1` = lag(WMA2,1),
+  `WMA3_l1` = lag(WMA3,1),
+  `WMA4_l1` = lag(WMA4,1),
+  `WMA5_l1` = lag(WMA5,1),
+  `WMA6_l1` = lag(WMA6,1),
+  `WMSD2_l1` = lag(WMSD2,1),
+  `WMSD3_l1` = lag(WMSD3,1),
+  `WMSD4_l1` = lag(WMSD4,1),
+  `WMSD5_l1` = lag(WMSD5,1),
+  `WMSD6_l1` = lag(WMSD6,1),
+  `PMA2_l1` = lag(PMA2, 1),
+  `PMA3_l1` = lag(PMA3, 1),
+  `PMA4_l1` = lag(PMA4, 1),
+  `PMA5_l1` = lag(PMA5, 1),
+  `PMA6_l1` = lag(PMA6, 1),
+  `PMSD2_l1` = lag(PMSD2, 1),
+  `PMSD3_l1` = lag(PMSD3, 1),
+  `PMSD4_l1` = lag(PMSD4, 1),
+  `PMSD5_l1` = lag(PMSD5, 1),
+  `PMSD6_l1` = lag(PMSD6, 1),
+  `WMA2_l2` = lag(WMA2,2),
+  `WMA3_l2` = lag(WMA3,2),
+  `WMA4_l2` = lag(WMA4,2),
+  `WMA5_l2` = lag(WMA5,2),
+  `WMA6_l2` = lag(WMA6,2),
+  `WMSD2_l2` = lag(WMSD2,2),
+  `WMSD3_l2` = lag(WMSD3,2),
+  `WMSD4_l2` = lag(WMSD4,2),
+  `WMSD5_l2` = lag(WMSD5,2),
+  `WMSD6_l2` = lag(WMSD6,2),
+  `PMA2_l2` = lag(PMA2, 2),
+  `PMA3_l2` = lag(PMA3, 2),
+  `PMA4_l2` = lag(PMA4, 2),
+  `PMA5_l2` = lag(PMA5, 2),
+  `PMA6_l2` = lag(PMA6, 2),
+  `PMSD2_l2` = lag(PMSD2, 2),
+  `PMSD3_l2` = lag(PMSD3, 2),
+  `PMSD4_l2` = lag(PMSD4, 2),
+  `PMSD5_l2` = lag(PMSD5, 2),
+  `PMSD6_l2` = lag(PMSD6, 2),
+  `WMA2_l3` = lag(WMA2,3),
+  `WMA3_l3` = lag(WMA3,3),
+  `WMA4_l3` = lag(WMA4,3),
+  `WMA5_l3` = lag(WMA5,3),
+  `WMA6_l3` = lag(WMA6,3),
+  `WMSD2_l3` = lag(WMSD2,3),
+  `WMSD3_l3` = lag(WMSD3,3),
+  `WMSD4_l3` = lag(WMSD4,3),
+  `WMSD5_l3` = lag(WMSD5,3),
+  `WMSD6_l3` = lag(WMSD6,3),
+  `PMA2_l3` = lag(PMA2, 3),
+  `PMA3_l3` = lag(PMA3, 3),
+  `PMA4_l3` = lag(PMA4, 3),
+  `PMA5_l3` = lag(PMA5, 3),
+  `PMA6_l3` = lag(PMA6, 3),
+  `PMSD2_l3` = lag(PMSD2, 3),
+  `PMSD3_l3` = lag(PMSD3, 3),
+  `PMSD4_l3` = lag(PMSD4, 3),
+  `PMSD5_l3` = lag(PMSD5, 3),
+  `PMSD6_l3` = lag(PMSD6, 3),
+  `WMA2_l4` = lag(WMA2,4),
+  `WMA3_l4` = lag(WMA3,4),
+  `WMA4_l4` = lag(WMA4,4),
+  `WMA5_l4` = lag(WMA5,4),
+  `WMA6_l4` = lag(WMA6,4),
+  `WMSD2_l4` = lag(WMSD2,4),
+  `WMSD3_l4` = lag(WMSD3,4),
+  `WMSD4_l4` = lag(WMSD4,4),
+  `WMSD5_l4` = lag(WMSD5,4),
+  `WMSD6_l4` = lag(WMSD6,4),
+  `PMA2_l4` = lag(PMA2, 4),
+  `PMA3_l4` = lag(PMA3, 4),
+  `PMA4_l4` = lag(PMA4, 4),
+  `PMA5_l4` = lag(PMA5, 4),
+  `PMA6_l4` = lag(PMA6, 4),
+  `PMSD2_l4` = lag(PMSD2, 4),
+  `PMSD3_l4` = lag(PMSD3, 4),
+  `PMSD4_l4` = lag(PMSD4, 4),
+  `PMSD5_l4` = lag(PMSD5, 4),
+  `PMSD6_l4` = lag(PMSD6, 4),
+  `WMA2_l5` = lag(WMA2,5),
+  `WMA3_l5` = lag(WMA3,5),
+  `WMA4_l5` = lag(WMA4,5),
+  `WMA5_l5` = lag(WMA5,5),
+  `WMA6_l5` = lag(WMA6,5),
+  `WMSD2_l5` = lag(WMSD2,5),
+  `WMSD3_l5` = lag(WMSD3,5),
+  `WMSD4_l5` = lag(WMSD4,5),
+  `WMSD5_l5` = lag(WMSD5,5),
+  `WMSD6_l5` = lag(WMSD6,5),
+  `PMA2_l5` = lag(PMA2, 5),
+  `PMA3_l5` = lag(PMA3, 5),
+  `PMA4_l5` = lag(PMA4, 5),
+  `PMA5_l5` = lag(PMA5, 5),
+  `PMA6_l5` = lag(PMA6, 5),
+  `PMSD2_l5` = lag(PMSD2, 5),
+  `PMSD3_l5` = lag(PMSD3, 5),
+  `PMSD4_l5` = lag(PMSD4, 5),
+  `PMSD5_l5` = lag(PMSD5, 5),
+  `PMSD6_l5` = lag(PMSD6, 5)
 )
 
 # set up parallelisation
@@ -589,12 +702,16 @@ min20 <- min20 %>% mutate(
   `lag_wind4` = lag(Wind_Speed, 4),
   `lag_wind5` = lag(Wind_Speed, 5),
   `lag_wind6` = lag(Wind_Speed, 6),
+  `lag_wind7` = lag(Wind_Speed, 7),
+  `lag_wind8` = lag(Wind_Speed, 8),
   `lag_power1` = lag(Power, 1),
   `lag_power2` = lag(Power, 2),
   `lag_power3` = lag(Power, 3),
   `lag_power4` = lag(Power, 4),
   `lag_power5` = lag(Power, 5),
   `lag_power6` = lag(Power, 6),
+  `lag_power7` = lag(Power, 7),
+  `lag_power8` = lag(Power, 8),
   `is_q1` = as.integer(quarter(Time)==1),
   `is_q2` = as.integer(quarter(Time)==2),
   `is_q3` = as.integer(quarter(Time)==3),
@@ -623,11 +740,54 @@ min20 <- min20 %>% mutate(
   `is_22` = as.integer(hour(Time) == 22)
 )
 
+min20 <- min20 %>% mutate(
+  `WMA2_l1` = lag(WMA2,1),
+  `WMA3_l1` = lag(WMA3,1),
+  `WMA4_l1` = lag(WMA4,1),
+  `WMA5_l1` = lag(WMA5,1),
+  `WMA6_l1` = lag(WMA6,1),
+  `WMSD2_l1` = lag(WMSD2,1),
+  `WMSD3_l1` = lag(WMSD3,1),
+  `WMSD4_l1` = lag(WMSD4,1),
+  `WMSD5_l1` = lag(WMSD5,1),
+  `WMSD6_l1` = lag(WMSD6,1),
+  `PMA2_l1` = lag(PMA2, 1),
+  `PMA3_l1` = lag(PMA3, 1),
+  `PMA4_l1` = lag(PMA4, 1),
+  `PMA5_l1` = lag(PMA5, 1),
+  `PMA6_l1` = lag(PMA6, 1),
+  `PMSD2_l1` = lag(PMSD2, 1),
+  `PMSD3_l1` = lag(PMSD3, 1),
+  `PMSD4_l1` = lag(PMSD4, 1),
+  `PMSD5_l1` = lag(PMSD5, 1),
+  `PMSD6_l1` = lag(PMSD6, 1),
+  `WMA2_l2` = lag(WMA2,2),
+  `WMA3_l2` = lag(WMA3,2),
+  `WMA4_l2` = lag(WMA4,2),
+  `WMA5_l2` = lag(WMA5,2),
+  `WMA6_l2` = lag(WMA6,2),
+  `WMSD2_l2` = lag(WMSD2,2),
+  `WMSD3_l2` = lag(WMSD3,2),
+  `WMSD4_l2` = lag(WMSD4,2),
+  `WMSD5_l2` = lag(WMSD5,2),
+  `WMSD6_l2` = lag(WMSD6,2),
+  `PMA2_l2` = lag(PMA2, 2),
+  `PMA3_l2` = lag(PMA3, 2),
+  `PMA4_l2` = lag(PMA4, 2),
+  `PMA5_l2` = lag(PMA5, 2),
+  `PMA6_l2` = lag(PMA6, 2),
+  `PMSD2_l2` = lag(PMSD2, 2),
+  `PMSD3_l2` = lag(PMSD3, 2),
+  `PMSD4_l2` = lag(PMSD4, 2),
+  `PMSD5_l2` = lag(PMSD5, 2),
+  `PMSD6_l2` = lag(PMSD6, 2)
+)
+
 # set up parallelisation
 registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-fc20_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
+fc20_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-3,3), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
   gc()
 
@@ -635,7 +795,7 @@ fc20_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind
   fc_lr <- NULL;
 
   # compute fit
-  fit_total <- min20 %>%
+  fit_h1 <- min20 %>%
     slice_head(n = i) %>%
     model(mod1 = TSLM(Power ~ WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
     reconcile(
@@ -645,23 +805,47 @@ fc20_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind
       ols_mod1 = min_trace(mod1, method = "ols"),
       mint_mod1 = min_trace(mod1, method = "mint_shrink")
     )
-
-  # extract fitted and residuals
-  if (i == ceiling(N*TrainingProportion)){
-    fitted <- fit_total %>%
-      fitted()
-    residuals <- fit_total %>%
-      residuals()
-    saveRDS(fitted, file = "fc20_lr_fitted.rds")
-    saveRDS(residuals, file = "fc20_lr_residuals.rds")
-  }
+  
+  fit_h2 <- min20 %>%
+    slice_head(n = i) %>%
+    model(mod1 = TSLM(Power ~ WMA2_l1 + WMA3_l1 + WMA4_l1 + WMA5_l1 + WMA6_l1 + WMSD2_l1 + WMSD3_l1 + WMSD4_l1 + WMSD5_l1 + WMSD6_l1 + PMA2_l1 + PMA3_l1 + PMA4_l1 + PMA5_l1 + PMA6_l1 + PMSD2_l1 + PMSD3_l1 + PMSD4_l1 + PMSD5_l1 + PMSD6_l1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_wind7 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + lag_power7 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+    reconcile(
+      bu_mod1 = bottom_up(mod1),
+      td_mod1 = top_down(mod1),
+      mo_mod1 = middle_out(mod1),
+      ols_mod1 = min_trace(mod1, method = "ols"),
+      mint_mod1 = min_trace(mod1, method = "mint_shrink")
+    )
+  
+  fit_h3 <- min20 %>%
+    slice_head(n = i) %>%
+    model(mod1 = TSLM(Power ~ WMA2_l2 + WMA3_l2 + WMA4_l2 + WMA5_l2 + WMA6_l2 + WMSD2_l2 + WMSD3_l2 + WMSD4_l2 + WMSD5_l2 + WMSD6_l2 + PMA2_l2 + PMA3_l2 + PMA4_l2 + PMA5_l2 + PMA6_l2 + PMSD2_l2 + PMSD3_l2 + PMSD4_l2 + PMSD5_l2 + PMSD6_l2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_wind7 + lag_wind8 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + lag_power7 + lag_power8 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+    reconcile(
+      bu_mod1 = bottom_up(mod1),
+      td_mod1 = top_down(mod1),
+      mo_mod1 = middle_out(mod1),
+      ols_mod1 = min_trace(mod1, method = "ols"),
+      mint_mod1 = min_trace(mod1, method = "mint_shrink")
+    )
 
   # forecast with new data
   fc_lr <- fc_lr %>%
-    bind_rows(fit_total %>%
+    bind_rows(fit_h1 %>%
                 forecast(new_data = min20 %>%
                            group_by(Group, Subgroup) %>%
                            slice(n = i+1)))
+  
+  fc_lr <- fc_lr %>%
+    bind_rows(fit_h2 %>%
+                forecast(new_data = min20 %>%
+                           group_by(Group, Subgroup) %>%
+                           slice(n = i+2)))
+  
+  fc_lr <- fc_lr %>%
+    bind_rows(fit_h3 %>%
+                forecast(new_data = min20 %>%
+                           group_by(Group, Subgroup) %>%
+                           slice(n = i+3)))
 
   return(fc_lr)
 }
@@ -728,12 +912,14 @@ min30 <- min30 %>% mutate(
   `lag_wind4` = lag(Wind_Speed, 4),
   `lag_wind5` = lag(Wind_Speed, 5),
   `lag_wind6` = lag(Wind_Speed, 6),
+  `lag_wind7` = lag(Wind_Speed, 7),
   `lag_power1` = lag(Power, 1),
   `lag_power2` = lag(Power, 2),
   `lag_power3` = lag(Power, 3),
   `lag_power4` = lag(Power, 4),
   `lag_power5` = lag(Power, 5),
   `lag_power6` = lag(Power, 6),
+  `lag_power7` = lag(Power, 7),
   `is_q1` = as.integer(quarter(Time)==1),
   `is_q2` = as.integer(quarter(Time)==2),
   `is_q3` = as.integer(quarter(Time)==3),
@@ -762,19 +948,55 @@ min30 <- min30 %>% mutate(
   `is_22` = as.integer(hour(Time) == 22)
 )
 
+min30 <- min30 %>% mutate(
+  `WMA2_l1` = lag(WMA2,1),
+  `WMA3_l1` = lag(WMA3,1),
+  `WMA4_l1` = lag(WMA4,1),
+  `WMA5_l1` = lag(WMA5,1),
+  `WMA6_l1` = lag(WMA6,1),
+  `WMSD2_l1` = lag(WMSD2,1),
+  `WMSD3_l1` = lag(WMSD3,1),
+  `WMSD4_l1` = lag(WMSD4,1),
+  `WMSD5_l1` = lag(WMSD5,1),
+  `WMSD6_l1` = lag(WMSD6,1),
+  `PMA2_l1` = lag(PMA2, 1),
+  `PMA3_l1` = lag(PMA3, 1),
+  `PMA4_l1` = lag(PMA4, 1),
+  `PMA5_l1` = lag(PMA5, 1),
+  `PMA6_l1` = lag(PMA6, 1),
+  `PMSD2_l1` = lag(PMSD2, 1),
+  `PMSD3_l1` = lag(PMSD3, 1),
+  `PMSD4_l1` = lag(PMSD4, 1),
+  `PMSD5_l1` = lag(PMSD5, 1),
+  `PMSD6_l1` = lag(PMSD6, 1)
+)
+
 # set up parallelisation
 registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-fc30_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
+fc30_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,2), .combine = bind_rows, .packages = c("fpp3")) %dopar%
 {
+  gc()
+  
   # initialize accuracy tibble
   fc_lr <- NULL;
 
   # compute fit
-  fit_total <- min30 %>%
+  fit_h1 <- min30 %>%
     slice_head(n = i) %>%
     model(mod1 = TSLM(Power ~ WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+    reconcile(
+      bu_mod1 = bottom_up(mod1),
+      td_mod1 = top_down(mod1),
+      mo_mod1 = middle_out(mod1),
+      ols_mod1 = min_trace(mod1, method = "ols"),
+      mint_mod1 = min_trace(mod1, method = "mint_shrink")
+    )
+  
+  fit_h2 <- min30 %>%
+    slice_head(n = i) %>%
+    model(mod1 = TSLM(Power ~ WMA2_l1 + WMA3_l1 + WMA4_l1 + WMA5_l1 + WMA6_l1 + WMSD2_l1 + WMSD3_l1 + WMSD4_l1 + WMSD5_l1 + WMSD6_l1 + PMA2_l1 + PMA3_l1 + PMA4_l1 + PMA5_l1 + PMA6_l1 + PMSD2_l1 + PMSD3_l1 + PMSD4_l1 + PMSD5_l1 + PMSD6_l1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_wind7 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + lag_power7 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
     reconcile(
       bu_mod1 = bottom_up(mod1),
       td_mod1 = top_down(mod1),
@@ -785,20 +1007,31 @@ fc30_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind
 
   # extract fitted and residuals
   if (i == ceiling(N*TrainingProportion)){
-    fitted <- fit_total %>%
+    fitted_h1 <- fit_h1 %>%
       fitted()
-    residuals <- fit_total %>%
+    residuals_h1 <- fit_h1 %>%
       residuals()
-    saveRDS(fitted, file = "fc30_lr_fitted.rds")
-    saveRDS(residuals, file = "fc30_lr_residuals.rds")
+    fitted_h2 <- fit_h2 %>%
+      fitted()
+    residuals_h2 <- fit_h2 %>%
+      residuals()
+    saveRDS(fitted_h1, file = "fc30_h1_lr_fitted.rds")
+    saveRDS(residuals_h1, file = "fc30_h1_lr_residuals.rds")
+    saveRDS(fitted_h2, file = "fc30_h2_lr_fitted.rds")
+    saveRDS(residuals_h2, file = "fc30_h2_lr_residuals.rds")
   }
 
   # forecast with new data
   fc_lr <- fc_lr %>%
-    bind_rows(fit_total %>%
+    bind_rows(fit_h1 %>%
                 forecast(new_data = min30 %>%
                            group_by(Group, Subgroup) %>%
                            slice(n = i+1)))
+  fc_lr <- fc_lr %>%
+    bind_rows(fit_h2 %>%
+                forecast(new_data = min30 %>%
+                           group_by(Group, Subgroup) %>%
+                           slice(n = i+2)))
 
   return(fc_lr)
 }
@@ -862,12 +1095,14 @@ hr1 <- hr1 %>% mutate(
   `lag_wind4` = lag(Wind_Speed, 4),
   `lag_wind5` = lag(Wind_Speed, 5),
   `lag_wind6` = lag(Wind_Speed, 6),
+  `lag_wind7` = lag(Wind_Speed, 7),
   `lag_power1` = lag(Power, 1),
   `lag_power2` = lag(Power, 2),
   `lag_power3` = lag(Power, 3),
   `lag_power4` = lag(Power, 4),
   `lag_power5` = lag(Power, 5),
   `lag_power6` = lag(Power, 6),
+  `lag_power7` = lag(Power, 7),
   `is_q1` = as.integer(quarter(Time)==1),
   `is_q2` = as.integer(quarter(Time)==2),
   `is_q3` = as.integer(quarter(Time)==3),
@@ -1250,14 +1485,26 @@ print(optimal)
   )
 
   # do our TSCV manually, starting from 90% of the dataset up to the second last element
-  for (i in seq(ceiling(N*TrainingProportion),N-1,1)) {
+  for (i in seq(ceiling(N*TrainingProportion),N-2,2)) {
 
     gc()
 
     # compute fit
-    fit_total <- min30_test %>%
+    fit_h1 <- min30_test %>%
       slice_head(n = i) %>%
       model(mod1 = lgbm(Power ~ hyperparameters(params) + WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+    
+    # compute fit
+    fit_h2 <- min30_test %>%
+      slice_head(n = i) %>%
+      model(mod1 = lgbm(Power ~ hyperparameters(params) + WMA2_l1 + WMA3_l1 + WMA4_l1 + WMA5_l1 + WMA6_l1 + WMSD2_l1 + WMSD3_l1 + WMSD4_l1 + WMSD5_l1 + WMSD6_l1 + PMA2_l1 + PMA3_l1 + PMA4_l1 + PMA5_l1 + PMA6_l1 + PMSD2_l1 + PMSD3_l1 + PMSD4_l1 + PMSD5_l1 + PMSD6_l1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_wind7 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + lag_power7 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
       reconcile(
         bu_mod1 = bottom_up(mod1),
         td_mod1 = top_down(mod1),
@@ -1268,20 +1515,32 @@ print(optimal)
 
     # forecast with new data
     fc30_gb <- fc30_gb %>%
-      bind_rows(fit_total %>%
+      bind_rows(fit_h1 %>%
                   forecast(new_data = min30_test %>%
                              group_by(Group, Subgroup) %>%
                              dplyr::slice(n = i+1)))
+    fc30_gb <- fc30_gb %>%
+      bind_rows(fit_h2 %>%
+                  forecast(new_data = min30_test %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(n = i+2)))
     
     # extract fitted and residuals
     if (i == ceiling(N*TrainingProportion)){
-      fitted <- fit_total %>%
+      fitted_h1 <- fit_h1 %>%
         fitted()
-      residuals <- fit_total %>%
+      residuals_h1 <- fit_h1 %>%
         residuals()
-      saveRDS(fitted, file = "fc30_gb_fitted.rds")
-      saveRDS(residuals, file = "fc30_gb_residuals.rds")
+      fitted_h2 <- fit_h2 %>%
+        fitted()
+      residuals_h2 <- fit_h2 %>%
+        residuals()
+      saveRDS(fitted_h1, file = "fc30_h1_gb_fitted.rds")
+      saveRDS(residuals_h1, file = "fc30_h1_gb_residuals.rds")
+      saveRDS(fitted_h2, file = "fc30_h2_gb_fitted.rds")
+      saveRDS(residuals_h2, file = "fc30_h2_gb_residuals.rds")
     }
+    
   }
 
   saveRDS(fc30_gb, file = "fc30_gb.rds")
@@ -1311,12 +1570,12 @@ print(optimal)
   )
 
   # do our TSCV manually, starting from 90% of the dataset up to the second last element
-  for (i in seq(ceiling(N*TrainingProportion),N-1,1)) {
+  for (i in seq(ceiling(N*TrainingProportion),N-3,3)) {
 
     gc()
-
+    
     # compute fit
-    fit_total <- min20_test %>%
+    fit_h1 <- min20 %>%
       slice_head(n = i) %>%
       model(mod1 = lgbm(Power ~ hyperparameters(params) + WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
       reconcile(
@@ -1326,22 +1585,68 @@ print(optimal)
         ols_mod1 = min_trace(mod1, method = "ols"),
         mint_mod1 = min_trace(mod1, method = "mint_shrink")
       )
-
+    
+    fit_h2 <- min20 %>%
+      slice_head(n = i) %>%
+      model(mod1 = lgbm(Power ~ hyperparameters(params) + WMA2_l1 + WMA3_l1 + WMA4_l1 + WMA5_l1 + WMA6_l1 + WMSD2_l1 + WMSD3_l1 + WMSD4_l1 + WMSD5_l1 + WMSD6_l1 + PMA2_l1 + PMA3_l1 + PMA4_l1 + PMA5_l1 + PMA6_l1 + PMSD2_l1 + PMSD3_l1 + PMSD4_l1 + PMSD5_l1 + PMSD6_l1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_wind7 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + lag_power7 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+    
+    fit_h3 <- min20 %>%
+      slice_head(n = i) %>%
+      model(mod1 = lgbm(Power ~ hyperparameters(params) + WMA2_l2 + WMA3_l2 + WMA4_l2 + WMA5_l2 + WMA6_l2 + WMSD2_l2 + WMSD3_l2 + WMSD4_l2 + WMSD5_l2 + WMSD6_l2 + PMA2_l2 + PMA3_l2 + PMA4_l2 + PMA5_l2 + PMA6_l2 + PMSD2_l2 + PMSD3_l2 + PMSD4_l2 + PMSD5_l2 + PMSD6_l2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_wind7 + lag_wind8 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + lag_power7 + lag_power8 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+    
     # forecast with new data
     fc20_gb <- fc20_gb %>%
-      bind_rows(fit_total %>%
-                  forecast(new_data = min20_test %>%
+      bind_rows(fit_h1 %>%
+                  forecast(new_data = min20 %>%
                              group_by(Group, Subgroup) %>%
                              dplyr::slice(n = i+1)))
     
+    fc20_gb <- fc20_gb %>%
+      bind_rows(fit_h2 %>%
+                  forecast(new_data = min20 %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(n = i+2)))
+    
+    fc20_gb <- fc20_gb %>%
+      bind_rows(fit_h3 %>%
+                  forecast(new_data = min20 %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(n = i+3)))
+    
     # extract fitted and residuals
     if (i == ceiling(N*TrainingProportion)){
-      fitted <- fit_total %>%
+      fitted_h1 <- fit_h1 %>%
         fitted()
-      residuals <- fit_total %>%
+      residuals_h1 <- fit_h1 %>%
         residuals()
-      saveRDS(fitted, file = "fc20_gb_fitted.rds")
-      saveRDS(residuals, file = "fc20_gb_residuals.rds")
+      fitted_h2 <- fit_h2 %>%
+        fitted()
+      residuals_h2 <- fit_h2 %>%
+        residuals()
+      fitted_h3 <- fit_h3 %>%
+        fitted()
+      residuals_h3 <- fit_h3 %>%
+        residuals()
+      saveRDS(fitted_h1, file = "fc20_h1_gb_fitted.rds")
+      saveRDS(residuals_h1, file = "fc20_h1_gb_residuals.rds")
+      saveRDS(fitted_h2, file = "fc20_h2_gb_fitted.rds")
+      saveRDS(residuals_h2, file = "fc20_h2_gb_residuals.rds")
+      saveRDS(fitted_h3, file = "fc20_h3_gb_fitted.rds")
+      saveRDS(residuals_h3, file = "fc20_h3_gb_residuals.rds")
     }
   }
 
@@ -1372,12 +1677,12 @@ print(optimal)
   )
 
   # do our TSCV manually, starting from 90% of the dataset up to the second last element
-  for (i in seq(ceiling(N*TrainingProportion),N-1,1)) {
+  for (i in seq(ceiling(N*TrainingProportion),N-6,6)) {
 
     gc()
 
     # compute fit
-    fit_total <- min10_test %>%
+    fit_h1 <- min10 %>%
       slice_head(n = i) %>%
       model(mod1 = lgbm(Power ~ hyperparameters(params) + WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
       reconcile(
@@ -1387,22 +1692,137 @@ print(optimal)
         ols_mod1 = min_trace(mod1, method = "ols"),
         mint_mod1 = min_trace(mod1, method = "mint_shrink")
       )
-
+    
+    fit_h2 <- min10 %>%
+      slice_head(n = i) %>%
+      model(mod1 = lgbm(Power ~ hyperparameters(params) + WMA2_l1 + WMA3_l1 + WMA4_l1 + WMA5_l1 + WMA6_l1 + WMSD2_l1 + WMSD3_l1 + WMSD4_l1 + WMSD5_l1 + WMSD6_l1 + PMA2_l1 + PMA3_l1 + PMA4_l1 + PMA5_l1 + PMA6_l1 + PMSD2_l1 + PMSD3_l1 + PMSD4_l1 + PMSD5_l1 + PMSD6_l1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_wind7 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + lag_power7 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+    
+    fit_h3 <- min10 %>%
+      slice_head(n = i) %>%
+      model(mod1 = lgbm(Power ~ hyperparameters(params) + WMA2_l2 + WMA3_l2 + WMA4_l2 + WMA5_l2 + WMA6_l2 + WMSD2_l2 + WMSD3_l2 + WMSD4_l2 + WMSD5_l2 + WMSD6_l2 + PMA2_l2 + PMA3_l2 + PMA4_l2 + PMA5_l2 + PMA6_l2 + PMSD2_l2 + PMSD3_l2 + PMSD4_l2 + PMSD5_l2 + PMSD6_l2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_wind7 + lag_wind8 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + lag_power7 + lag_power8 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+    
+    fit_h4 <- min10 %>%
+      slice_head(n = i) %>%
+      model(mod1 = lgbm(Power ~ hyperparameters(params) + WMA2_l3 + WMA3_l3 + WMA4_l3 + WMA5_l3 + WMA6_l3 + WMSD2_l3 + WMSD3_l3 + WMSD4_l3 + WMSD5_l3 + WMSD6_l3 + PMA2_l3 + PMA3_l3 + PMA4_l3 + PMA5_l3 + PMA6_l3 + PMSD2_l3 + PMSD3_l3 + PMSD4_l3 + PMSD5_l3 + PMSD6_l3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_wind7 + lag_wind8 + lag_wind9 + lag_power4 + lag_power5 + lag_power6 + lag_power7 + lag_power8 + lag_power9 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+    
+    fit_h5 <- min10 %>%
+      slice_head(n = i) %>%
+      model(mod1 = lgbm(Power ~ hyperparameters(params) + WMA2_l4 + WMA3_l4 + WMA4_l4 + WMA5_l4 + WMA6_l4 + WMSD2_l4 + WMSD3_l4 + WMSD4_l4 + WMSD5_l4 + WMSD6_l4 + PMA2_l4 + PMA3_l4 + PMA4_l4 + PMA5_l4 + PMA6_l4 + PMSD2_l4 + PMSD3_l4 + PMSD4_l4 + PMSD5_l4 + PMSD6_l4 + lag_wind5 + lag_wind6 + lag_wind7 + lag_wind8 + lag_wind9 + lag_wind10 + lag_power5 + lag_power6 + lag_power7 + lag_power8 + lag_power9 + lag_power10 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+    
+    fit_h6 <- min10 %>%
+      slice_head(n = i) %>%
+      model(mod1 = lgbm(Power ~ hyperparameters(params) + WMA2_l5 + WMA3_l5 + WMA4_l5 + WMA5_l5 + WMA6_l5 + WMSD2_l5 + WMSD3_l5 + WMSD4_l5 + WMSD5_l5 + WMSD6_l5 + PMA2_l5 + PMA3_l5 + PMA4_l5 + PMA5_l5 + PMA6_l5 + PMSD2_l5 + PMSD3_l5 + PMSD4_l5 + PMSD5_l5 + PMSD6_l5 + lag_wind6 + lag_wind7 + lag_wind8 + lag_wind9 + lag_wind10 + lag_wind11 + lag_power6 + lag_power7 + lag_power8 + lag_power9 + lag_power10 + lag_power11 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+    
     # forecast with new data
     fc10_gb <- fc10_gb %>%
-      bind_rows(fit_total %>%
-                  forecast(new_data = min10_test %>%
+      dplyr::bind_rows(fit_h1 %>%
+                  forecast(new_data = min10 %>%
                              group_by(Group, Subgroup) %>%
                              dplyr::slice(n = i+1)))
     
+    fc10_gb <- fc10_gb %>%
+      bind_rows(fit_h2 %>%
+                  forecast(new_data = min10 %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(n = i+2)))
+    
+    fc10_gb <- fc10_gb %>%
+      bind_rows(fit_h3 %>%
+                  forecast(new_data = min10 %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(n = i+3)))
+    
+    fc10_gb <- fc10_gb %>%
+      bind_rows(fit_h4 %>%
+                  forecast(new_data = min10 %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(n = i+4)))
+    
+    fc10_gb <- fc10_gb %>%
+      bind_rows(fit_h5 %>%
+                  forecast(new_data = min10 %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(n = i+5)))
+    
+    fc10_gb <- fc10_gb %>%
+      bind_rows(fit_h6 %>%
+                  forecast(new_data = min10 %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(n = i+6)))
+    
     # extract fitted and residuals
     if (i == ceiling(N*TrainingProportion)){
-      fitted <- fit_total %>%
+      fitted_h1 <- fit_h1 %>%
         fitted()
-      residuals <- fit_total %>%
+      residuals_h1 <- fit_h1 %>%
         residuals()
-      saveRDS(fitted, file = "fc10_gb_fitted.rds")
-      saveRDS(residuals, file = "fc10_gb_residuals.rds")
+      fitted_h2 <- fit_h2 %>%
+        fitted()
+      residuals_h2 <- fit_h2 %>%
+        residuals()
+      fitted_h3 <- fit_h3 %>%
+        fitted()
+      residuals_h3 <- fit_h3 %>%
+        residuals()
+      fitted_h4 <- fit_h4 %>%
+        fitted()
+      residuals_h4 <- fit_h4 %>%
+        residuals()
+      fitted_h5 <- fit_h5 %>%
+        fitted()
+      residuals_h5 <- fit_h5 %>%
+        residuals()
+      fitted_h6 <- fit_h6 %>%
+        fitted()
+      residuals_h6 <- fit_h6 %>%
+        residuals()
+      saveRDS(fitted_h1, file = "fc10_h1_gb_fitted.rds")
+      saveRDS(residuals_h1, file = "fc10_h1_gb_residuals.rds")
+      saveRDS(fitted_h2, file = "fc10_h2_gb_fitted.rds")
+      saveRDS(residuals_h2, file = "fc10_h2_gb_residuals.rds")
+      saveRDS(fitted_h3, file = "fc10_h3_gb_fitted.rds")
+      saveRDS(residuals_h3, file = "fc10_h3_gb_residuals.rds")
+      saveRDS(fitted_h4, file = "fc10_h4_gb_fitted.rds")
+      saveRDS(residuals_h4, file = "fc10_h4_gb_residuals.rds")
+      saveRDS(fitted_h5, file = "fc10_h5_gb_fitted.rds")
+      saveRDS(residuals_h5, file = "fc10_h5_gb_residuals.rds")
+      saveRDS(fitted_h6, file = "fc10_h6_gb_fitted.rds")
+      saveRDS(residuals_h6, file = "fc10_h6_gb_residuals.rds")
     }
   }
 
@@ -1417,6 +1837,8 @@ print(optimal)
   fc30_lr <- readRDS(file = "fc30_lr.rds")
   fc30_gb <- readRDS(file = "fc30_gb.rds")
 
+  fc20_lr <- readRDS(file = "fc20_lr.rds")
+  
   fc1_resid <- readRDS(file = "fc1_gb_residuals.rds")
 
 #### Compare benchmark to linear regression and lightgbm - 10 minutely ####
@@ -1744,9 +2166,11 @@ plotb <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), G
 plotc <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "C") %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
 plotd <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "D") %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
 
-ggpubr::ggarrange(plota, plotb, plotc, plotd,
-          labels = c("A", "B", "C", "D"),
-          ncol = 1, nrow = 4)
+tmp_plot <- ggpubr::ggarrange(plotc, plotd,
+          labels = c("C", "D"),
+          ncol = 1, nrow = 2)
+
+tmp_plot + theme(text=element_text(size=20))
 
 plotabcdnoagg <- hr1_power %>% filter(is_aggregated(Subgroup), !is_aggregated(Group)) %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
 plotabcdagg <- hr1_power %>% filter(is_aggregated(Group), is_aggregated(Subgroup)) %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()

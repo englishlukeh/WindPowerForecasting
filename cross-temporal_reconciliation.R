@@ -11,14 +11,18 @@ library(doParallel)
 library(lightgbm)
 library(distributional)
 library(FoReco)
+library(tsutils)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set this to your working directory
 
 #### Define auxiliary functions ####
 # function to convert grouped/keyed tsibble into matrix of ts() time series
+# if you get Error in `[<-`(`*tmp*`, , 2, value = (data %>% filter(Group == "A", is_aggregated(Subgroup)))[[variable]]) : subscript out of bounds
+# change all n_keys to n_groups or vice versa
 to_matrix_for_ts <- function(data, variable){
-  N = nrow(data)/n_keys(data)
-  matrix_tmp <- matrix(NA, nrow = N, ncol = n_keys(data))
+  
+  N = nrow(data)/n_groups(data)
+  matrix_tmp <- matrix(NA, nrow = N, ncol = n_groups(data))
   matrix_tmp[,1] <- (data %>% filter(is_aggregated(Group), is_aggregated(Subgroup)))[[variable]]
   matrix_tmp[,2] <- (data %>% filter(Group == "A", is_aggregated(Subgroup)))[[variable]]
   matrix_tmp[,3] <- (data %>% filter(Group == "B", is_aggregated(Subgroup)))[[variable]]
@@ -138,7 +142,42 @@ compute_rRMSE <- function(error_squared, naive_error_squared_10, naive_error_squ
   return(list(error_squared, error_10_squared, error_20_squared, error_30_squared, error_1_squared))
 }
 
+#### join .rds files for 10 minutely data since it was too big to compute all at once ####
+tmp1 <- as_tsibble(readRDS(file = "fc10_lr_half1.rds"))
+tmp2 <- as_tsibble(readRDS(file = "fc10_lr_half2.rds")) %>% filter_index("2021-06-12 19:00:00" ~ .)
+fc10_lr <- bind_rows(tmp1, tmp2)
+saveRDS(fc10_lr, file = "fc10_lr.rds")
 
+#### group by keys ####
+fc10_lr <- as_tsibble(readRDS(file = "fc10_lr.rds")) %>% group_by_key()
+fc20_lr <- as_tsibble(readRDS(file = "fc20_lr.rds")) %>% group_by_key()
+fc30_lr <- as_tsibble(readRDS(file = "fc30_lr.rds")) %>% group_by_key()
+fc1_lr <- as_tsibble(readRDS(file = "fc1_lr.rds")) %>% group_by_key()
+
+fc10_gb <- as_tsibble(readRDS(file = "fc10_gb.rds")) %>% group_by_key()
+fc20_gb <- as_tsibble(readRDS(file = "fc20_gb.rds")) %>% group_by_key()
+fc30_gb <- as_tsibble(readRDS(file = "fc30_gb.rds")) %>% group_by_key()
+fc1_gb <- as_tsibble(readRDS(file = "fc1_gb.rds")) %>% group_by_key()
+
+fc10_benchmark <- as_tsibble(readRDS(file = "fc10_benchmark.rds")) %>% group_by_key()
+fc20_benchmark <- as_tsibble(readRDS(file = "fc20_benchmark.rds")) %>% group_by_key()
+fc30_benchmark <- as_tsibble(readRDS(file = "fc30_benchmark.rds")) %>% group_by_key()
+fc1_benchmark <- as_tsibble(readRDS(file = "fc1_benchmark.rds")) %>% group_by_key()
+
+saveRDS(fc10_lr, file = "fc10_lr.rds")
+saveRDS(fc20_lr, file = "fc20_lr.rds")
+saveRDS(fc30_lr, file = "fc30_lr.rds")
+saveRDS(fc1_lr, file = "fc1_lr.rds")
+
+saveRDS(fc10_gb, file = "fc10_gb.rds")
+saveRDS(fc20_gb, file = "fc20_gb.rds")
+saveRDS(fc30_gb, file = "fc30_gb.rds")
+saveRDS(fc1_gb, file = "fc1_gb.rds")
+
+saveRDS(fc10_benchmark, file = "fc10_benchmark.rds")
+saveRDS(fc20_benchmark, file = "fc20_benchmark.rds")
+saveRDS(fc30_benchmark, file = "fc30_benchmark.rds")
+saveRDS(fc1_benchmark, file = "fc1_benchmark.rds")
 
 #### LINEAR REGRESSION - extract BU ####
 # forecasts linear regression
@@ -739,13 +778,41 @@ write.csv(rRMSE_gb_mint[1],"rRMSE_gb_mint.csv", row.names = TRUE)
 write.csv(c(rMAE_gb_mint[[2]],rMAE_gb_mint[[3]],rMAE_gb_mint[[4]],rMAE_gb_mint[[5]]), "rMAE_gb_mint_nemenyi.csv")
 write.csv(c(rRMSE_gb_mint[[2]],rRMSE_gb_mint[[3]],rRMSE_gb_mint[[4]],rRMSE_gb_mint[[5]]), "rRMSE_gb_mint_nemenyi.csv")
 
+
+
 #### prep for LR cross-temporal reconciliation ####
+# combine residuals for h=1,2,3,...,6 etc. for residuals, simply concatenating columns
+# 10-minutely
+tmp1 <- as_tibble(readRDS(file = "fc10_h1_lr_residuals.rds"))
+tmp2 <- as_tibble(readRDS(file = "fc10_h2_lr_residuals.rds"))
+tmp3 <- as_tibble(readRDS(file = "fc10_h3_lr_residuals.rds"))
+tmp4 <- as_tibble(readRDS(file = "fc10_h4_lr_residuals.rds"))
+tmp5 <- as_tibble(readRDS(file = "fc10_h5_lr_residuals.rds"))
+tmp6 <- as_tibble(readRDS(file = "fc10_h6_lr_residuals.rds"))
+
+fc10_lr_residuals <- bind_rows(tmp1, tmp2, tmp3, tmp4, tmp5, tmp6)
+saveRDS(fc10_lr_residuals, file = "fc10_lr_residuals.rds")
+
+#20-minutely
+tmp1 <- as_tibble(readRDS(file = "fc20_h1_lr_residuals.rds"))
+tmp2 <- as_tibble(readRDS(file = "fc20_h2_lr_residuals.rds"))
+tmp3 <- as_tibble(readRDS(file = "fc20_h3_lr_residuals.rds"))
+
+fc20_lr_residuals <- bind_rows(tmp1, tmp2, tmp3)
+saveRDS(fc20_lr_residuals, file = "fc20_lr_residuals.rds")
+
+#30-minutely
+tmp1 <- as_tibble(readRDS(file = "fc30_h1_lr_residuals.rds"))
+tmp2 <- as_tibble(readRDS(file = "fc30_h2_lr_residuals.rds"))
+
+fc30_lr_residuals <- bind_rows(tmp1, tmp2)
+saveRDS(fc30_lr_residuals, file = "fc30_lr_residuals.rds")
 
 # residuals linear regression
-fc10_lr_residuals <- readRDS(file = "fc10_lr_residuals.rds") %>% filter(.model == "mod1")
-fc20_lr_residuals <- readRDS(file = "fc20_lr_residuals.rds") %>% filter(.model == "mod1")
-fc30_lr_residuals <- readRDS(file = "fc30_lr_residuals.rds") %>% filter(.model == "mod1")
-fc1_lr_residuals <- readRDS(file = "fc1_lr_residuals.rds") %>% filter(.model == "mod1")
+fc10_lr_residuals <- readRDS(file = "fc10_lr_residuals.rds") %>% filter(.model == "mod1") %>% group_by(Group, Subgroup, .model)
+fc20_lr_residuals <- readRDS(file = "fc20_lr_residuals.rds") %>% filter(.model == "mod1") %>% group_by(Group, Subgroup, .model)
+fc30_lr_residuals <- readRDS(file = "fc30_lr_residuals.rds") %>% filter(.model == "mod1") %>% group_by(Group, Subgroup, .model)
+fc1_lr_residuals <- readRDS(file = "fc1_lr_residuals.rds") %>% filter(.model == "mod1") %>% group_by(Group, Subgroup, .model)
 
 #### change means to sums for temporal hierarchy ####
 fc20_lr_residuals <- fc20_lr_residuals %>% mutate(.resid = .resid * 2)
@@ -785,6 +852,9 @@ FoReco_data <- list(base = base_lr,
                     res = res_lr,
                     C = C,
                     obs = obs)
+
+write.csv(c(rMAE_lr[[2]],rMAE_lr[[3]],rMAE_lr[[4]],rMAE_lr[[5]]), "nemenyi_rMAE_lr.csv")
+write.csv(c(rRMSE_lr[[2]],rRMSE_lr[[3]],rRMSE_lr[[4]],rRMSE_lr[[5]]), "nemenyi_rRMSE_lr.csv")
 
 #### Forecast reconciliation through temporal hierarchies for all time series using series-acov (Nystrup et al., 2020) ####
 
@@ -910,16 +980,44 @@ obj_error_squared <- abs(obj - test)^2
 rMAE_bu_ct <- compute_rMAE(obj_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_bu_ct <- compute_rRMSE(obj_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_bu_ct,"rMAE_bu_ct.csv", row.names = TRUE)
-write.csv(rRMSE_bu_ct,"rRMSE_bu_ct.csv", row.names = TRUE)
+write.csv(rMAE_bu_ct[[1]],"rMAE_bu_ct.csv", row.names = TRUE)
+write.csv(rRMSE_bu_ct[[1]],"rRMSE_bu_ct.csv", row.names = TRUE)
+write.csv(c(rMAE_bu_ct[[2]],rMAE_bu_ct[[3]],rMAE_bu_ct[[4]],rMAE_bu_ct[[5]]), "nemenyi_rMAE_bu_ct.csv")
+write.csv(c(rRMSE_bu_ct[[2]],rRMSE_bu_ct[[3]],rRMSE_bu_ct[[4]],rRMSE_bu_ct[[5]]), "nemenyi_rRMSE_bu_ct.csv")
 
 #### prep for LightGBM cross-temporal reconciliation ####
+# combine residuals for h=1,2,3,...,6 etc. for residuals, simply concatenating columns
+# 10-minutely
+tmp1 <- as_tibble(readRDS(file = "fc10_h1_gb_residuals.rds"))
+tmp2 <- as_tibble(readRDS(file = "fc10_h2_gb_residuals.rds"))
+tmp3 <- as_tibble(readRDS(file = "fc10_h3_gb_residuals.rds"))
+tmp4 <- as_tibble(readRDS(file = "fc10_h4_gb_residuals.rds"))
+tmp5 <- as_tibble(readRDS(file = "fc10_h5_gb_residuals.rds"))
+tmp6 <- as_tibble(readRDS(file = "fc10_h6_gb_residuals.rds"))
+
+fc10_gb_residuals <- bind_rows(tmp1, tmp2, tmp3, tmp4, tmp5, tmp6)
+saveRDS(fc10_gb_residuals, file = "fc10_gb_residuals.rds")
+
+#20-minutely
+tmp1 <- as_tibble(readRDS(file = "fc20_h1_gb_residuals.rds"))
+tmp2 <- as_tibble(readRDS(file = "fc20_h2_gb_residuals.rds"))
+tmp3 <- as_tibble(readRDS(file = "fc20_h3_gb_residuals.rds"))
+
+fc20_gb_residuals <- bind_rows(tmp1, tmp2, tmp3)
+saveRDS(fc20_gb_residuals, file = "fc20_gb_residuals.rds")
+
+#30-minutely
+tmp1 <- as_tibble(readRDS(file = "fc30_h1_gb_residuals.rds"))
+tmp2 <- as_tibble(readRDS(file = "fc30_h2_gb_residuals.rds"))
+
+fc30_gb_residuals <- bind_rows(tmp1, tmp2)
+saveRDS(fc30_gb_residuals, file = "fc30_gb_residuals.rds")
 
 # residuals linear regression
-fc10_gb_residuals <- readRDS(file = "fc10_gb_residuals.rds") %>% filter(.model == "mod1")
-fc20_gb_residuals <- readRDS(file = "fc20_gb_residuals.rds") %>% filter(.model == "mod1")
-fc30_gb_residuals <- readRDS(file = "fc30_gb_residuals.rds") %>% filter(.model == "mod1")
-fc1_gb_residuals <- readRDS(file = "fc1_gb_residuals.rds") %>% filter(.model == "mod1")
+fc10_gb_residuals <- readRDS(file = "fc10_gb_residuals.rds") %>% filter(.model == "mod1") %>% group_by(Group, Subgroup, .model)
+fc20_gb_residuals <- readRDS(file = "fc20_gb_residuals.rds") %>% filter(.model == "mod1") %>% group_by(Group, Subgroup, .model)
+fc30_gb_residuals <- readRDS(file = "fc30_gb_residuals.rds") %>% filter(.model == "mod1") %>% group_by(Group, Subgroup, .model)
+fc1_gb_residuals <- readRDS(file = "fc1_gb_residuals.rds") %>% filter(.model == "mod1") %>% group_by(Group, Subgroup, .model)
 
 #### change means to sums for temporal hierarchy ####
 fc20_gb_residuals <- fc20_gb_residuals %>% mutate(.resid = .resid * 2)
@@ -1084,8 +1182,13 @@ obj_error_squared <- abs(obj - test)^2
 rMAE_gb_bu_ct <- compute_rMAE(obj_error, naive_error_10, naive_error_20, naive_error_30, naive_error_1)
 rRMSE_gb_bu_ct <- compute_rRMSE(obj_error_squared, naive_error_10_squared, naive_error_20_squared, naive_error_30_squared, naive_error_1_squared)
 
-write.csv(rMAE_gb_bu_ct,"rMAE_gb_bu_ct.csv", row.names = TRUE)
-write.csv(rRMSE_gb_bu_ct,"rRMSE_gb_bu_ct.csv", row.names = TRUE)
+write.csv(rMAE_gb_bu_ct[1],"rMAE_gb_bu_ct.csv", row.names = TRUE)
+write.csv(rRMSE_gb_bu_ct[1],"rRMSE_gb_bu_ct.csv", row.names = TRUE)
+write.csv(c(rMAE_gb_bu_ct[[2]],rMAE_gb_bu_ct[[3]],rMAE_gb_bu_ct[[4]],rMAE_gb_bu_ct[[5]]), "nemenyi_rMAE_gb_bu_ct.csv")
+write.csv(c(rRMSE_gb_bu_ct[[2]],rRMSE_gb_bu_ct[[3]],rRMSE_gb_bu_ct[[4]],rRMSE_gb_bu_ct[[5]]), "nemenyi_rRMSE_gb_bu_ct.csv")
+
+write.csv(c(rMAE_gb[[2]],rMAE_gb[[3]],rMAE_gb[[4]],rMAE_gb[[5]]), "nemenyi_rMAE_gb.csv")
+write.csv(c(rRMSE_gb[[2]],rRMSE_gb[[3]],rRMSE_gb[[4]],rRMSE_gb[[5]]), "nemenyi_rRMSE_gb.csv")
 
 #### Nemenyi Test ####
 library(tsutils)
@@ -1107,21 +1210,34 @@ x_LR_rRMSE <- x_rRMSE[,1:6]
 x_gb_rMAE <- x_rMAE[,7:12]
 x_gb_rRMSE <- x_rRMSE[,7:12]
 
+tmp1_rRMSE <- x_LR_rRMSE
+tmp1_rMAE <- x_LR_rMAE
+
+nemenyi(x_rMAE, plottype = "mcb")
+nemenyi(x_rRMSE, plottype = "mcb")
+nemenyi(x_LR_rMAE, plottype = "mcb")
 nemenyi(x_LR_rRMSE, plottype = "mcb")
+nemenyi(x_gb_rMAE, plottype = "mcb")
+nemenyi(x_gb_rRMSE, plottype = "mcb")
 
 # now cross-temp
 nem_cross_temp <- read_excel("Nemenyi-Cross-Temporal.xlsx")
 
-x_rMAE <- as.matrix(nem_cross_temp[,1:12])
-x_rRMSE <- as.matrix(nem_cross_temp[,13:24])
+x_rMAE <- as.matrix(nem_cross_temp[,1:14])
+x_rRMSE <- as.matrix(nem_cross_temp[,15:28])
 
-colnames(x_rMAE) <- colnames(nem_cross_temp[1:12])
-colnames(x_rRMSE) <- colnames(nem_cross_temp[13:24])
+colnames(x_rMAE) <- colnames(nem_cross_temp[1:14])
+colnames(x_rRMSE) <- colnames(nem_cross_temp[15:28])
 
-x_LR_rMAE <- x_rMAE[,1:6]
-x_LR_rRMSE <- x_rRMSE[,1:6]
+x_LR_rMAE <- x_rMAE[,1:7]
+x_LR_rRMSE <- x_rRMSE[,1:7]
 
-x_gb_rMAE <- x_rMAE[,7:12]
-x_gb_rRMSE <- x_rRMSE[,7:12]
+x_gb_rMAE <- x_rMAE[,8:14]
+x_gb_rRMSE <- x_rRMSE[,8:14]
 
+nemenyi(x_rMAE, plottype = "mcb")
+nemenyi(x_rRMSE, plottype = "mcb")
 nemenyi(x_LR_rMAE, plottype = "mcb")
+nemenyi(x_LR_rRMSE, plottype = "mcb")
+nemenyi(x_gb_rMAE, plottype = "mcb")
+nemenyi(x_gb_rRMSE, plottype = "mcb")
