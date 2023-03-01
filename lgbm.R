@@ -115,3 +115,4 @@ fitted.model_lgbm <- function(object, ...){
 residuals.model_lgbm <- function(object, ...){
   object$residuals
 }
+

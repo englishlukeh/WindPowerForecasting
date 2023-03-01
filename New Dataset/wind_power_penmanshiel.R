@@ -29,11 +29,11 @@ turbineA13 <- readr::read_csv("Turbine_Data_Penmanshiel_13_2020-01-01_-_2021-01-
 turbineA14 <- readr::read_csv("Turbine_Data_Penmanshiel_14_2020-01-01_-_2021-01-01_1054.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A14") %>% slice_head(n=52680)
 turbineA15 <- readr::read_csv("Turbine_Data_Penmanshiel_15_2020-01-01_-_2021-01-01_1056.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A15") %>% slice_head(n=52680)
 turbineB1 <- readr::read_csv("Turbine_Data_Kelmarsh_1_2020-01-01_-_2021-01-01_228.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B1") %>% slice_head(n=52680)
-turbineB2 <- readr::read_csv("Turbine_Data_Kelmarsh_1_2020-01-01_-_2021-01-01_228.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B2") %>% slice_head(n=52680)
-turbineB3 <- readr::read_csv("Turbine_Data_Kelmarsh_1_2020-01-01_-_2021-01-01_228.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B3") %>% slice_head(n=52680)
-turbineB4 <- readr::read_csv("Turbine_Data_Kelmarsh_1_2020-01-01_-_2021-01-01_228.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B4") %>% slice_head(n=52680) 
-turbineB5 <- readr::read_csv("Turbine_Data_Kelmarsh_1_2020-01-01_-_2021-01-01_228.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B5") %>% slice_head(n=52680)
-turbineB6 <- readr::read_csv("Turbine_Data_Kelmarsh_1_2020-01-01_-_2021-01-01_228.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B6") %>% slice_head(n=52680)
+turbineB2 <- readr::read_csv("Turbine_Data_Kelmarsh_2_2020-01-01_-_2021-01-01_229.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B2") %>% slice_head(n=52680)
+turbineB3 <- readr::read_csv("Turbine_Data_Kelmarsh_3_2020-01-01_-_2021-01-01_230.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B3") %>% slice_head(n=52680)
+turbineB4 <- readr::read_csv("Turbine_Data_Kelmarsh_4_2020-01-01_-_2021-01-01_231.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B4") %>% slice_head(n=52680) 
+turbineB5 <- readr::read_csv("Turbine_Data_Kelmarsh_5_2020-01-01_-_2021-01-01_232.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B5") %>% slice_head(n=52680)
+turbineB6 <- readr::read_csv("Turbine_Data_Kelmarsh_6_2020-01-01_-_2021-01-01_233.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B6") %>% slice_head(n=52680)
 
 dataset <- rbind(turbineA1,turbineA2,turbineA4,turbineA5,turbineA6,turbineA7,turbineA8,turbineA9,turbineA10,turbineA11,turbineA12,turbineA13,turbineA14,turbineA15,turbineB1,turbineB2,turbineB3,turbineB4,turbineB5,turbineB6)
 colnames(dataset) <- c("PCTimeStamp", "Wind_Speed", "Power", "Group", "Subgroup")
@@ -82,6 +82,11 @@ hr1_power <- min10_power %>%
 min10_power <- min10_power %>%
   rename(Time = PCTimeStamp)
 
+saveRDS(min10_power, file = "min10.rds")
+saveRDS(min20_power, file = "min20.rds")
+saveRDS(min30_power, file = "min30.rds")
+saveRDS(hr1_power, file = "hr1.rds")
+
 # set the proportion of training set
 TrainingProportion <- 0.90
 # set number of threads
@@ -89,18 +94,108 @@ numThreads = 3;
 
 library(ggpubr, include.only = 'ggarrange') # include one function
 
-saveRDS(min10_power, file = "min10.rds")
-saveRDS(min20_power, file = "min20.rds")
-saveRDS(min30_power, file = "min30.rds")
-saveRDS(hr1_power, file = "hr1.rds")
-
-
-
 #### Load .rds files ####
 min10_power <- readRDS(file = "min10.rds")
 min20_power <- readRDS(file = "min20.rds")
 min30_power <- readRDS(file = "min30.rds")
 hr1_power <- readRDS(file = "hr1.rds")
+
+#### descriptive statistics ####
+A_10 <- min10_power %>% filter(Group == "A", is_aggregated(Subgroup))
+A1_10 <- min10_power %>% filter(Group == "A", Subgroup == "A1")
+A2_10 <- min10_power %>% filter(Group == "A", Subgroup == "A2")
+A4_10 <- min10_power %>% filter(Group == "A", Subgroup == "A4")
+A5_10 <- min10_power %>% filter(Group == "A", Subgroup == "A5")
+A6_10 <- min10_power %>% filter(Group == "A", Subgroup == "A6")
+A7_10 <- min10_power %>% filter(Group == "A", Subgroup == "A7")
+A8_10 <- min10_power %>% filter(Group == "A", Subgroup == "A8")
+A9_10 <- min10_power %>% filter(Group == "A", Subgroup == "A9")
+A10_10 <- min10_power %>% filter(Group == "A", Subgroup == "A10")
+A11_10 <- min10_power %>% filter(Group == "A", Subgroup == "A11")
+A12_10 <- min10_power %>% filter(Group == "A", Subgroup == "A12")
+A13_10 <- min10_power %>% filter(Group == "A", Subgroup == "A13")
+A14_10 <- min10_power %>% filter(Group == "A", Subgroup == "A14")
+A15_10 <- min10_power %>% filter(Group == "A", Subgroup == "A15")
+
+B_10 <- min10_power %>% filter(Group == "B", is_aggregated(Subgroup))
+B1_10 <- min10_power %>% filter(Group == "B", Subgroup == "B1")
+B2_10 <- min10_power %>% filter(Group == "B", Subgroup == "B2")
+B3_10 <- min10_power %>% filter(Group == "B", Subgroup == "B3")
+B4_10 <- min10_power %>% filter(Group == "B", Subgroup == "B4")
+B5_10 <- min10_power %>% filter(Group == "B", Subgroup == "B5")
+B6_10 <- min10_power %>% filter(Group == "B", Subgroup == "B6")
+
+boxplot(A1_10$Power, A2_10$Power, A4_10$Power, A5_10$Power, A6_10$Power, A7_10$Power, A8_10$Power, A9_10$Power, A10_10$Power, A11_10$Power, A12_10$Power, A13_10$Power, A14_10$Power, A15_10$Power, B1_10$Power, B2_10$Power, B3_10$Power, B4_10$Power, B5_10$Power, B6_10$Power,
+        names = c("A1", "A2", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12", "A13", "A14", "A15", "B1", "B2", "B3", "B4", "B5", "B6"),
+        xlab="Wind Turbine Index",
+        ylab="Total Energy Generated (kW)",
+        col=c("red", "red", "red", "red", "red", "red", "red", "red", "red", "red", "red", "red", "red", "red", "orange", "orange", "orange", "orange", "orange", "orange"),
+        border = "brown",
+        las=2,
+        horizontal = FALSE
+)
+
+agg_10 <- min10_power %>% filter(is_aggregated(Group), is_aggregated(Subgroup))
+
+par(mar = c(5, 5, 5, 5))
+boxplot(A_10$Power, B_10$Power, C_10$Power, D_10$Power, agg_10$Power,
+        names = c("A", "B", "C", "D", "Aggregated"),
+        xlab="Wind Farm Index",
+        ylab="Total Energy Generated (kW)
+        ",
+        col=c("red", "orange", "yellow", "green", "grey"),
+        border = "brown",
+        las=1,
+        horizontal = FALSE
+)
+
+min10_power %>% filter(Group == "A", Subgroup == "A1") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", Subgroup == "A2") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", Subgroup == "A4") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", Subgroup == "A5") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", Subgroup == "A6") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", Subgroup == "A7") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", Subgroup == "A8") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", Subgroup == "A9") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", Subgroup == "A10") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", Subgroup == "A11") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", Subgroup == "A12") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", Subgroup == "A13") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", Subgroup == "A14") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", Subgroup == "A15") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "A", is_aggregated(Subgroup)) %>% as.data.frame() %>% select(Power) %>% summary()
+
+min10_power %>% filter(Group == "B", Subgroup == "B1") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "B", Subgroup == "B2") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "B", Subgroup == "B3") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "B", Subgroup == "B4") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "B", Subgroup == "B5") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "B", Subgroup == "B6") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "B", Subgroup == "B7") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "B", Subgroup == "B8") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "B", Subgroup == "B9") %>% as.data.frame() %>% select(Power) %>% summary()
+min10_power %>% filter(Group == "B", is_aggregated(Subgroup)) %>% as.data.frame() %>% select(Power) %>% summary()
+
+min10_power %>% filter(is_aggregated(Group), is_aggregated(Subgroup)) %>% as.data.frame() %>% select(Power) %>% summary()
+
+plota <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "A") %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
+plotb <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "B") %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
+plotc <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "C") %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
+plotd <- hr1_power %>% filter(!is_aggregated(Group), !is_aggregated(Subgroup), Group == "D") %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
+
+tmp_plot <- ggpubr::ggarrange(plotc, plotd,
+                              labels = c("C", "D"),
+                              ncol = 1, nrow = 2)
+
+tmp_plot + theme(text=element_text(size=20))
+
+plotabcdnoagg <- hr1_power %>% filter(is_aggregated(Subgroup), !is_aggregated(Group)) %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
+plotabcdagg <- hr1_power %>% filter(is_aggregated(Group), is_aggregated(Subgroup)) %>% filter_index("2021-01-01"~"2021-01-31") %>% autoplot()
+
+ggpubr::ggarrange(plotabcdnoagg, plotabcdagg,
+                  labels = c("A", "B"),
+                  ncol = 1, nrow = 2)
+
 
 #### Benchmark models - 10 minutely ####
 # we use TSCV, forecasting on rolling origin basis
@@ -1072,7 +1167,80 @@ min30 <- min30 %>% mutate(
 # save .rds file
 saveRDS(min30, file = "min30_features.rds")
 
--
+# load .rds file
+min30 <- readRDS(file = "min30_features.rds")
+
+# compute number of entries
+N = nrow(min30)/n_keys(min30)
+
+# set up parallelisation
+registerDoParallel(cl <- makeCluster(numThreads))
+
+# do our TSCV manually, starting from 90% of the dataset up to the second last element
+fc30_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,2), .combine = bind_rows, .packages = c("fpp3")) %dopar%
+  {
+    gc()
+    
+    # initialize accuracy tibble
+    fc_lr <- NULL;
+    
+    # compute fit
+    fit_h1 <- min30 %>%
+      slice_head(n = i) %>%
+      model(mod1 = TSLM(Power ~ WMA2 + WMA3 + WMA4 + WMA5 + WMA6 + WMSD2 + WMSD3 + WMSD4 + WMSD5 + WMSD6 + PMA2 + PMA3 + PMA4 + PMA5 + PMA6 + PMSD2 + PMSD3 + PMSD4 + PMSD5 + PMSD6 + lag_wind1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_power1 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+    
+    fit_h2 <- min30 %>%
+      slice_head(n = i) %>%
+      model(mod1 = TSLM(Power ~ WMA2_l1 + WMA3_l1 + WMA4_l1 + WMA5_l1 + WMA6_l1 + WMSD2_l1 + WMSD3_l1 + WMSD4_l1 + WMSD5_l1 + WMSD6_l1 + PMA2_l1 + PMA3_l1 + PMA4_l1 + PMA5_l1 + PMA6_l1 + PMSD2_l1 + PMSD3_l1 + PMSD4_l1 + PMSD5_l1 + PMSD6_l1 + lag_wind2 + lag_wind3 + lag_wind4 + lag_wind5 + lag_wind6 + lag_wind7 + lag_power2 + lag_power3 + lag_power4 + lag_power5 + lag_power6 + lag_power7 + is_q1 + is_q2 + is_q3 + is_00 + is_01 + is_02 + is_03 + is_04 + is_05 + is_06 + is_07 + is_08 + is_09 + is_10 + is_11 + is_12 + is_13 + is_14 + is_15 + is_16 + is_17 + is_18 + is_19 + is_20 + is_21 + is_22)) %>%
+      reconcile(
+        bu_mod1 = bottom_up(mod1),
+        td_mod1 = top_down(mod1),
+        mo_mod1 = middle_out(mod1),
+        ols_mod1 = min_trace(mod1, method = "ols"),
+        mint_mod1 = min_trace(mod1, method = "mint_shrink")
+      )
+    
+    # extract fitted and residuals
+    if (i == ceiling(N*TrainingProportion)){
+      fitted_h1 <- fit_h1 %>%
+        fitted()
+      residuals_h1 <- fit_h1 %>%
+        residuals()
+      fitted_h2 <- fit_h2 %>%
+        fitted()
+      residuals_h2 <- fit_h2 %>%
+        residuals()
+      saveRDS(fitted_h1, file = "fc30_h1_lr_fitted.rds")
+      saveRDS(residuals_h1, file = "fc30_h1_lr_residuals.rds")
+      saveRDS(fitted_h2, file = "fc30_h2_lr_fitted.rds")
+      saveRDS(residuals_h2, file = "fc30_h2_lr_residuals.rds")
+    }
+    
+    # forecast with new data
+    fc_lr <- fc_lr %>%
+      bind_rows(fit_h1 %>%
+                  forecast(new_data = min30 %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(i+1)))
+    fc_lr <- fc_lr %>%
+      bind_rows(fit_h2 %>%
+                  forecast(new_data = min30 %>%
+                             group_by(Group, Subgroup) %>%
+                             dplyr::slice(i+2)))
+    
+    return(fc_lr)
+  }
+stopCluster(cl)
+
+saveRDS(fc30_lr, file = "fc30_lr.rds")
+
 
 #### Time series linear regression with feature engineering - 1 hourly ####
 # again we use TSCV to evaluate the model
@@ -1305,17 +1473,19 @@ for (i in seq_along(training_percentages)){
   dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
   
   grid_search <- expand.grid(
-    num_leaves = c(90,100),
-    max_depth= c(7),
+    num_leaves = c(50,60,70),
+    max_depth= c(6,7,8),
     learning_rate= c(0.1),
-    min_data_in_leaf = c(130),
-    linear_lambda = c(1,2,3))
+    min_data_in_leaf = c(110,120,130),
+    linear_lambda = c(1,2))
   
   errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
 }
 
 optimal <- grid_search[which.min(colMeans(errors)), ]
 print(optimal)
+saveRDS(optimal, file = "fc10_gb_optimal.rds")
+
 
 #### Optimize hyperparameters 20-minutely ####
 # load .rds file
@@ -1724,9 +1894,9 @@ params = list(
   objective = "regression"
   , metric = "l2"
   , learning_rate = 0.1
-  , num_leaves = 90
+  , num_leaves = 60
   , max_depth = 7
-  , min_data_in_leaf = 130
+  , min_data_in_leaf = 120
   , num_threads = 8
   , linear_lambda = 1
 )
