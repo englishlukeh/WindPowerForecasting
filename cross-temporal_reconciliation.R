@@ -1194,7 +1194,7 @@ write.csv(c(rRMSE_gb[[2]],rRMSE_gb[[3]],rRMSE_gb[[4]],rRMSE_gb[[5]]), "nemenyi_r
 library(tsutils)
 
 # cross-sec
-
+# figs 6'x6'
 nem_cross_sec <- read_excel("Nemenyi-Cross-Sectional.xlsx")
 
 
@@ -1244,18 +1244,21 @@ nemenyi(x_gb_rRMSE, plottype = "mcb")
 
 #### line plot for accuracy metric ####
 # cross-sectional
-AvgRelRMSE_lr = c(0.9726,0.9768,0.9626,0.9712,0.9638,0.9588)
-AvgRelRMSE_lgbm = c(0.9789,0.9808,0.9842,0.9862,0.9781,0.9705)
+# 10'x5'
+AvgRelRMSE_lr = c(0.9660,0.9673,0.9559,0.9634,0.9566,0.9519)
+AvgRelRMSE_lgbm = c(0.9724,0.9717,0.9800,0.9767,0.9745,0.9665)
+AvgRelMAE_lr = c(1.039,1.042,1.010,1.030,1.014,1.010)
+AvgRelMAE_lgbm = c(1.048,1.049,1.043,1.047,1.038,1.032)
 
 x = c(1,2,3,4,5,6)
 recon <- list("Unreconciled", "BU", "TD", "MO", "OLS", "MinT-Shr")
 
-plot( 0, type="n", xlim=c(0.5,6.5), ylim=c(0.955,0.995), ylab="AvgRelRMSE", xaxt='n', xlab=element_blank())
+plot( 0, type="n", xlim=c(0.5,6.5), ylim=c(1.01,1.05), ylab="AvgRelMAE", xaxt='n', xlab=element_blank())
 axis(1, at=1:6, labels=recon)
-lines(x, AvgRelRMSE_lr, col="red")
-points(x, AvgRelRMSE_lr, col="red", pch=15)
-lines(x, AvgRelRMSE_lgbm, col="blue")
-points(x, AvgRelRMSE_lgbm, col="blue", pch=15)
+lines(x, AvgRelMAE_lr, col="red")
+points(x, AvgRelMAE_lr, col="red", pch=15)
+lines(x, AvgRelMAE_lgbm, col="blue")
+points(x, AvgRelMAE_lgbm, col="blue", pch=15)
 
 legend( x="topright", 
         legend=c("LR Base Forecasts","LightGBM Base Forecasts"),
@@ -1263,17 +1266,19 @@ legend( x="topright",
         pch=c(NA,NA) )
 
 # cross-temporal
-AvgRelRMSE_lr = c(0.965,0.909,0.936,0.909,0.918,0.918,0.909)
-AvgRelRMSE_lgbm = c(0.971,0.914,0.936,0.912,0.922,0.921,0.910)
+AvgRelRMSE_lr = c(0.9660,0.9087,0.9391,0.9100,0.9187,0.9188,0.9091)
+AvgRelRMSE_lgbm = c(0.9724,0.9107,0.9379,0.9160,0.9262,0.9255,0.9140)
+AvgRelMAE_lr = c(1.039,0.970,1.015,0.967,0.980,0.980,0.965)
+AvgRelMAE_lgbm = c(1.048,0.978,1.015,0.977,0.991,0.990,0.975)
 x = c(1,2,3,4,5,6,7)
 recon <- list("Unreconciled", "BU-CT", "THF", "TCS", "CST", "ITE", "OCT")
 
-plot( 0, type="n", xlim=c(0.5,7.5), ylim=c(0.90,0.975), ylab="AvgRelRMSE", xaxt='n', xlab=element_blank())
+plot( 0, type="n", xlim=c(0.5,7.5), ylim=c(0.96,1.05), ylab="AvgRelMAE", xaxt='n', xlab=element_blank())
 axis(1, at=1:7, labels=recon)
-lines(x, AvgRelRMSE_lr, col="red")
-points(x, AvgRelRMSE_lr, col="red", pch=15)
-lines(x, AvgRelRMSE_lgbm, col="blue")
-points(x, AvgRelRMSE_lgbm, col="blue", pch=15)
+lines(x, AvgRelMAE_lr, col="red")
+points(x, AvgRelMAE_lr, col="red", pch=15)
+lines(x, AvgRelMAE_lgbm, col="blue")
+points(x, AvgRelMAE_lgbm, col="blue", pch=15)
 
 legend( x="topright", 
         legend=c("LR Base Forecasts","LightGBM Base Forecasts"),

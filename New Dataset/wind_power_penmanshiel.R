@@ -128,7 +128,7 @@ B6_10 <- min10_power %>% filter(Group == "B", Subgroup == "B6")
 boxplot(A1_10$Power, A2_10$Power, A4_10$Power, A5_10$Power, A6_10$Power, A7_10$Power, A8_10$Power, A9_10$Power, A10_10$Power, A11_10$Power, A12_10$Power, A13_10$Power, A14_10$Power, A15_10$Power, B1_10$Power, B2_10$Power, B3_10$Power, B4_10$Power, B5_10$Power, B6_10$Power,
         names = c("A1", "A2", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12", "A13", "A14", "A15", "B1", "B2", "B3", "B4", "B5", "B6"),
         xlab="Wind Turbine Index",
-        ylab="Total Energy Generated (kW)",
+        ylab="Average Power (kW)",
         col=c("red", "red", "red", "red", "red", "red", "red", "red", "red", "red", "red", "red", "red", "red", "orange", "orange", "orange", "orange", "orange", "orange"),
         border = "brown",
         las=2,
@@ -141,7 +141,7 @@ par(mar = c(5, 5, 5, 5))
 boxplot(A_10$Power, B_10$Power, C_10$Power, D_10$Power, agg_10$Power,
         names = c("A", "B", "C", "D", "Aggregated"),
         xlab="Wind Farm Index",
-        ylab="Total Energy Generated (kW)
+        ylab="Average Power (kW)
         ",
         col=c("red", "orange", "yellow", "green", "grey"),
         border = "brown",
@@ -171,9 +171,6 @@ min10_power %>% filter(Group == "B", Subgroup == "B3") %>% as.data.frame() %>% s
 min10_power %>% filter(Group == "B", Subgroup == "B4") %>% as.data.frame() %>% select(Power) %>% summary()
 min10_power %>% filter(Group == "B", Subgroup == "B5") %>% as.data.frame() %>% select(Power) %>% summary()
 min10_power %>% filter(Group == "B", Subgroup == "B6") %>% as.data.frame() %>% select(Power) %>% summary()
-min10_power %>% filter(Group == "B", Subgroup == "B7") %>% as.data.frame() %>% select(Power) %>% summary()
-min10_power %>% filter(Group == "B", Subgroup == "B8") %>% as.data.frame() %>% select(Power) %>% summary()
-min10_power %>% filter(Group == "B", Subgroup == "B9") %>% as.data.frame() %>% select(Power) %>% summary()
 min10_power %>% filter(Group == "B", is_aggregated(Subgroup)) %>% as.data.frame() %>% select(Power) %>% summary()
 
 min10_power %>% filter(is_aggregated(Group), is_aggregated(Subgroup)) %>% as.data.frame() %>% select(Power) %>% summary()
@@ -1517,10 +1514,10 @@ for (i in seq_along(training_percentages)){
   dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
   
   grid_search <- expand.grid(
-    num_leaves = c(50,60,70),
+    num_leaves = c(60,70,80),
     max_depth= c(5,6,7),
     learning_rate= c(0.1),
-    min_data_in_leaf = c(170,180,190),
+    min_data_in_leaf = c(180,190,200),
     linear_lambda = c(1,2,3))
   
   errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
@@ -1559,7 +1556,7 @@ for (i in seq_along(training_percentages)){
   dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
   
   grid_search <- expand.grid(
-    num_leaves = c(50,60,70),
+    num_leaves = c(20,30,40),
     max_depth= c(5,6,7),
     learning_rate= c(0.1),
     min_data_in_leaf = c(150,160,170),
@@ -1603,10 +1600,10 @@ for (i in seq_along(training_percentages)){
   dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
   
   grid_search <- expand.grid(
-    num_leaves = c(40,50,60),
+    num_leaves = c(70,80,90),
     max_depth= c(6,7,8),
     learning_rate= c(0.1),
-    min_data_in_leaf = c(170,180,190),
+    min_data_in_leaf = c(160,170,180),
     linear_lambda = c(1,2))
   
   errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
@@ -1632,7 +1629,7 @@ params = list(
   objective = "regression"
   , metric = "l2"
   , learning_rate = 0.1
-  , num_leaves = 50
+  , num_leaves = 40
   , max_depth = 7
   , min_data_in_leaf = 180
   , num_threads = 6
@@ -1677,7 +1674,7 @@ for (i in seq(ceiling(N*TrainingProportion),N-1,1)) {
 saveRDS(fc1_gb, file = "fc1_gb.rds")
 
 
-#### Use gradient boosting - 30 minutely ####
+  #### Use gradient boosting - 30 minutely ####
 # this uses features calculated in the linear regression section
 
 min30_test <- min30
@@ -1694,7 +1691,7 @@ params = list(
   objective = "regression"
   , metric = "l2"
   , learning_rate = 0.1
-  , num_leaves = 70
+  , num_leaves = 30
   , max_depth = 6
   , min_data_in_leaf = 160
   , num_threads = 6
@@ -1779,9 +1776,9 @@ params = list(
   objective = "regression"
   , metric = "l2"
   , learning_rate = 0.1
-  , num_leaves = 60
+  , num_leaves = 70
   , max_depth = 6
-  , min_data_in_leaf = 180
+  , min_data_in_leaf = 190
   , num_threads = 8
   , linear_lambda = 1
 )

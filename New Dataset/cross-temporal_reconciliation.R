@@ -1235,18 +1235,20 @@ nemenyi(x_gb_rRMSE, plottype = "mcb")
 
 #### line plot for accuracy metric ####
 # cross-sectional
-AvgRelRMSE_lr = c(0.9726,0.9768,0.9626,0.9712,0.9638,0.9588)
-AvgRelRMSE_lgbm = c(0.9789,0.9808,0.9842,0.9862,0.9781,0.9705)
+AvgRelRMSE_lr = c(0.979,0.981,0.971,0.974,0.971,0.971)
+AvgRelRMSE_lgbm = c(1.033,1.036,1.011,1.029,1.022,1.026)
+AvgRelMAE_lr = c(1.084,1.090,1.048,1.063,1.054,1.057)
+AvgRelMAE_lgbm = c(1.175,1.182,1.126,1.154,1.148,1.150)
 
 x = c(1,2,3,4,5,6)
 recon <- list("Unreconciled", "BU", "TD", "MO", "OLS", "MinT-Shr")
 
-plot( 0, type="n", xlim=c(0.5,6.5), ylim=c(0.955,0.995), ylab="AvgRelRMSE", xaxt='n', xlab=element_blank())
+plot( 0, type="n", xlim=c(0.5,6.5), ylim=c(1.04,1.19), ylab="AvgRelMAE", xaxt='n', xlab=element_blank())
 axis(1, at=1:6, labels=recon)
-lines(x, AvgRelRMSE_lr, col="red")
-points(x, AvgRelRMSE_lr, col="red", pch=15)
-lines(x, AvgRelRMSE_lgbm, col="blue")
-points(x, AvgRelRMSE_lgbm, col="blue", pch=15)
+lines(x, AvgRelMAE_lr, col="red")
+points(x, AvgRelMAE_lr, col="red", pch=15)
+lines(x, AvgRelMAE_lgbm, col="blue")
+points(x, AvgRelMAE_lgbm, col="blue", pch=15)
 
 legend( x="topright", 
         legend=c("LR Base Forecasts","LightGBM Base Forecasts"),
@@ -1254,17 +1256,19 @@ legend( x="topright",
         pch=c(NA,NA) )
 
 # cross-temporal
-AvgRelRMSE_lr = c(0.965,0.909,0.936,0.909,0.918,0.918,0.909)
-AvgRelRMSE_lgbm = c(0.971,0.914,0.936,0.912,0.922,0.921,0.910)
+AvgRelRMSE_lr = c(0.9791,0.9227,0.9543,0.9303,0.9405,0.9402,0.9573)
+AvgRelRMSE_lgbm = c(1.0331,0.9911,1.0035,0.9781,0.9870,0.9868,0.9766)
+AvgRelMAE_lr = c(1.084,1.030,1.060,1.016,1.029,1.029,1.050)
+AvgRelMAE_lgbm = c(1.175,1.140,1.146,1.101,1.111,1.112,1.098)
 x = c(1,2,3,4,5,6,7)
 recon <- list("Unreconciled", "BU-CT", "THF", "TCS", "CST", "ITE", "OCT")
 
-plot( 0, type="n", xlim=c(0.5,7.5), ylim=c(0.90,0.975), ylab="AvgRelRMSE", xaxt='n', xlab=element_blank())
+plot( 0, type="n", xlim=c(0.5,7.5), ylim=c(1.01,1.18), ylab="AvgRelMAE", xaxt='n', xlab=element_blank())
 axis(1, at=1:7, labels=recon)
-lines(x, AvgRelRMSE_lr, col="red")
-points(x, AvgRelRMSE_lr, col="red", pch=15)
-lines(x, AvgRelRMSE_lgbm, col="blue")
-points(x, AvgRelRMSE_lgbm, col="blue", pch=15)
+lines(x, AvgRelMAE_lr, col="red")
+points(x, AvgRelMAE_lr, col="red", pch=15)
+lines(x, AvgRelMAE_lgbm, col="blue")
+points(x, AvgRelMAE_lgbm, col="blue", pch=15)
 
 legend( x="topright", 
         legend=c("LR Base Forecasts","LightGBM Base Forecasts"),

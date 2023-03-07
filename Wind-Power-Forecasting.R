@@ -102,7 +102,7 @@ saveRDS(hr1_power, file = "hr1.rds")
 
 #### Check correlation of wind and power ####
 
-#check correlation for hourly
+#check correlation for hourly - use 6'x5' for figs
 for (val in node_names) {
   tmp <- hr1_power %>%
     filter(Subgroup == val)
@@ -2239,10 +2239,11 @@ D4_10 <- min10_power %>% filter(Group == "D", Subgroup == "D4")
 D5_10 <- min10_power %>% filter(Group == "D", Subgroup == "D5")
 D6_10 <- min10_power %>% filter(Group == "D", Subgroup == "D6")
 
+# use for fig
 boxplot(A1_10$Power, A2_10$Power, A3_10$Power, A4_10$Power, A5_10$Power, A6_10$Power, A7_10$Power, B1_10$Power, B2_10$Power, B3_10$Power, B4_10$Power, B5_10$Power, B6_10$Power, B7_10$Power, B8_10$Power, B9_10$Power, C1_10$Power, C2_10$Power, C3_10$Power, D1_10$Power, D2_10$Power, D3_10$Power, D4_10$Power, D5_10$Power, D6_10$Power,
         names = c("A1", "A2", "A3", "A4", "A5", "A6", "A7", "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "C1", "C2", "C3", "D1", "D2", "D3", "D4", "D5", "D6"),
         xlab="Wind Turbine Index",
-        ylab="Total Energy Generated (kW)",
+        ylab="Average Power (kW)",
         col=c("red", "red", "red", "red", "red", "red", "red", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "yellow", "yellow", "yellow", "green", "green", "green", "green", "green", "green"),
         border = "brown",
         las=2,
