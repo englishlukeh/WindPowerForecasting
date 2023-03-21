@@ -1,2 +1,2 @@
 # WindPowerForecasting
-Forecasting of wind power through time series analysis
+The repository for manuscript entitled "Renewable Energy Hierarchical Time Series Forecasting and Reconciliation". We implement a LightGBM wrapper for fabletools, which allows cross-sectional reconciliation for machine learning base forecasts. Base forecasts and cross-sectionally reconciled forecasts are produced using the file "Wind-Power-Forecasting.R" in the main directory, and the "wind_power_penmanshiel.R" file in the "New Dataset" directory. Crosstemporal reconciliation and also accuracy analysis is performed using the files titled "cross-temporal_reconciliation.R". The file "lgbm.R" implements the LightGBM fabetools model, allowing hyperparameters to be explicitly specified.
