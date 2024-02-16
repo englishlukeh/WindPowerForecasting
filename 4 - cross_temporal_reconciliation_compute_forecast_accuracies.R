@@ -55,7 +55,7 @@ to_matrix_for_ts <- function(data, variable){
   matrix_tmp[,29] <- (data %>% filter(Group == "D", Subgroup == "D5"))[[variable]]
   matrix_tmp[,30] <- (data %>% filter(Group == "D", Subgroup == "D6"))[[variable]]
   colnames(matrix_tmp) <- c("T", "A", "B", "C", "D", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "C1", "C2", "C3", "D1", "D2", "D3", "D4", "D5", "D6")
-
+  
   return(matrix_tmp)
 }
 
@@ -115,7 +115,7 @@ compute_rRMSE <- function(error_squared, naive_error_squared_10, naive_error_squ
   
   id <- which(simplify2array(strsplit(colnames(error_squared), split = "_"))[1, ] == "k6")
   error_1_squared <- sqrt(colMeans(t(error_squared[, id])))/sqrt(naive_error_squared_1)
-
+  
   # set up matrix of rRMSE
   error_squared <- matrix(NA,4,3)
   colnames(error_squared) <- c(2,1,0)
@@ -143,10 +143,10 @@ compute_rRMSE <- function(error_squared, naive_error_squared_10, naive_error_squ
 }
 
 #### join .rds files for 10 minutely data since it was too big to compute all at once ####
-tmp1 <- as_tsibble(readRDS(file = "fc10_lr_half1.rds"))
-tmp2 <- as_tsibble(readRDS(file = "fc10_lr_half2.rds")) %>% filter_index("2021-06-12 19:00:00" ~ .)
-fc10_lr <- bind_rows(tmp1, tmp2)
-saveRDS(fc10_lr, file = "fc10_lr.rds")
+#tmp1 <- as_tsibble(readRDS(file = "fc10_lr_half1.rds"))
+#tmp2 <- as_tsibble(readRDS(file = "fc10_lr_half2.rds")) %>% filter_index("2021-06-12 19:00:00" ~ .)
+#fc10_lr <- bind_rows(tmp1, tmp2)
+#saveRDS(fc10_lr, file = "fc10_lr.rds")
 
 #### group by keys ####
 fc10_lr <- as_tsibble(readRDS(file = "fc10_lr.rds")) %>% group_by_key()
@@ -186,10 +186,6 @@ fc20_lr_bu <- as_tsibble(readRDS(file = "fc20_lr.rds")) %>% filter(.model == "bu
 fc30_lr_bu <- as_tsibble(readRDS(file = "fc30_lr.rds")) %>% filter(.model == "bu_mod1")
 fc1_lr_bu <- as_tsibble(readRDS(file = "fc1_lr.rds")) %>% filter(.model == "bu_mod1")
 
-fc20_lr_bu <- fc20_lr_bu %>% mutate(.mean = .mean * 2)
-fc30_lr_bu <- fc30_lr_bu %>% mutate(.mean = .mean * 3)
-fc1_lr_bu <- fc1_lr_bu %>% mutate(.mean = .mean * 6)
-
 lr_bu <- NULL
 
 lr_bu$k1 <- to_matrix_for_ts(fc10_lr_bu, ".mean")
@@ -212,10 +208,6 @@ fc20_lr_td <- as_tsibble(readRDS(file = "fc20_lr.rds")) %>% filter(.model == "td
 fc30_lr_td <- as_tsibble(readRDS(file = "fc30_lr.rds")) %>% filter(.model == "td_mod1")
 fc1_lr_td <- as_tsibble(readRDS(file = "fc1_lr.rds")) %>% filter(.model == "td_mod1")
 
-fc20_lr_td <- fc20_lr_td %>% mutate(.mean = .mean * 2)
-fc30_lr_td <- fc30_lr_td %>% mutate(.mean = .mean * 3)
-fc1_lr_td <- fc1_lr_td %>% mutate(.mean = .mean * 6)
-
 lr_td <- NULL
 
 lr_td$k1 <- to_matrix_for_ts(fc10_lr_td, ".mean")
@@ -236,10 +228,6 @@ fc20_lr_mo <- as_tsibble(readRDS(file = "fc20_lr.rds")) %>% filter(.model == "mo
 fc30_lr_mo <- as_tsibble(readRDS(file = "fc30_lr.rds")) %>% filter(.model == "mo_mod1")
 fc1_lr_mo <- as_tsibble(readRDS(file = "fc1_lr.rds")) %>% filter(.model == "mo_mod1")
 
-fc20_lr_mo <- fc20_lr_mo %>% mutate(.mean = .mean * 2)
-fc30_lr_mo <- fc30_lr_mo %>% mutate(.mean = .mean * 3)
-fc1_lr_mo <- fc1_lr_mo %>% mutate(.mean = .mean * 6)
-
 lr_mo <- NULL
 
 lr_mo$k1 <- to_matrix_for_ts(fc10_lr_mo, ".mean")
@@ -258,10 +246,6 @@ fc10_lr_ols <- as_tsibble(readRDS(file = "fc10_lr.rds")) %>% filter(.model == "o
 fc20_lr_ols <- as_tsibble(readRDS(file = "fc20_lr.rds")) %>% filter(.model == "ols_mod1")
 fc30_lr_ols <- as_tsibble(readRDS(file = "fc30_lr.rds")) %>% filter(.model == "ols_mod1")
 fc1_lr_ols <- as_tsibble(readRDS(file = "fc1_lr.rds")) %>% filter(.model == "ols_mod1")
-
-fc20_lr_ols <- fc20_lr_ols %>% mutate(.mean = .mean * 2)
-fc30_lr_ols <- fc30_lr_ols %>% mutate(.mean = .mean * 3)
-fc1_lr_ols <- fc1_lr_ols %>% mutate(.mean = .mean * 6)
 
 lr_ols <- NULL
 
@@ -283,10 +267,6 @@ fc20_lr_mint <- as_tsibble(readRDS(file = "fc20_lr.rds")) %>% filter(.model == "
 fc30_lr_mint <- as_tsibble(readRDS(file = "fc30_lr.rds")) %>% filter(.model == "mint_mod1")
 fc1_lr_mint <- as_tsibble(readRDS(file = "fc1_lr.rds")) %>% filter(.model == "mint_mod1")
 
-fc20_lr_mint <- fc20_lr_mint %>% mutate(.mean = .mean * 2)
-fc30_lr_mint <- fc30_lr_mint %>% mutate(.mean = .mean * 3)
-fc1_lr_mint <- fc1_lr_mint %>% mutate(.mean = .mean * 6)
-
 lr_mint <- NULL
 
 lr_mint$k1 <- to_matrix_for_ts(fc10_lr_mint, ".mean")
@@ -305,10 +285,6 @@ fc10_lr <- as_tsibble(readRDS(file = "fc10_lr.rds")) %>% filter(.model == "mod1"
 fc20_lr <- as_tsibble(readRDS(file = "fc20_lr.rds")) %>% filter(.model == "mod1")
 fc30_lr <- as_tsibble(readRDS(file = "fc30_lr.rds")) %>% filter(.model == "mod1")
 fc1_lr <- as_tsibble(readRDS(file = "fc1_lr.rds")) %>% filter(.model == "mod1")
-
-fc20_lr <- fc20_lr %>% mutate(.mean = .mean * 2)
-fc30_lr <- fc30_lr %>% mutate(.mean = .mean * 3)
-fc1_lr <- fc1_lr %>% mutate(.mean = .mean * 6)
 
 lr <- NULL
 
@@ -329,10 +305,6 @@ fc10_gb_bu <- as_tsibble(readRDS(file = "fc10_gb.rds")) %>% filter(.model == "bu
 fc20_gb_bu <- as_tsibble(readRDS(file = "fc20_gb.rds")) %>% filter(.model == "bu_mod1")
 fc30_gb_bu <- as_tsibble(readRDS(file = "fc30_gb.rds")) %>% filter(.model == "bu_mod1")
 fc1_gb_bu <- as_tsibble(readRDS(file = "fc1_gb.rds")) %>% filter(.model == "bu_mod1")
-
-fc20_gb_bu <- fc20_gb_bu %>% mutate(.mean = .mean * 2)
-fc30_gb_bu <- fc30_gb_bu %>% mutate(.mean = .mean * 3)
-fc1_gb_bu <- fc1_gb_bu %>% mutate(.mean = .mean * 6)
 
 gb_bu <- NULL
 
@@ -356,10 +328,6 @@ fc20_gb_td <- as_tsibble(readRDS(file = "fc20_gb.rds")) %>% filter(.model == "td
 fc30_gb_td <- as_tsibble(readRDS(file = "fc30_gb.rds")) %>% filter(.model == "td_mod1")
 fc1_gb_td <- as_tsibble(readRDS(file = "fc1_gb.rds")) %>% filter(.model == "td_mod1")
 
-fc20_gb_td <- fc20_gb_td %>% mutate(.mean = .mean * 2)
-fc30_gb_td <- fc30_gb_td %>% mutate(.mean = .mean * 3)
-fc1_gb_td <- fc1_gb_td %>% mutate(.mean = .mean * 6)
-
 gb_td <- NULL
 
 gb_td$k1 <- to_matrix_for_ts(fc10_gb_td, ".mean")
@@ -380,10 +348,6 @@ fc20_gb_mo <- as_tsibble(readRDS(file = "fc20_gb.rds")) %>% filter(.model == "mo
 fc30_gb_mo <- as_tsibble(readRDS(file = "fc30_gb.rds")) %>% filter(.model == "mo_mod1")
 fc1_gb_mo <- as_tsibble(readRDS(file = "fc1_gb.rds")) %>% filter(.model == "mo_mod1")
 
-fc20_gb_mo <- fc20_gb_mo %>% mutate(.mean = .mean * 2)
-fc30_gb_mo <- fc30_gb_mo %>% mutate(.mean = .mean * 3)
-fc1_gb_mo <- fc1_gb_mo %>% mutate(.mean = .mean * 6)
-
 gb_mo <- NULL
 
 gb_mo$k1 <- to_matrix_for_ts(fc10_gb_mo, ".mean")
@@ -402,10 +366,6 @@ fc10_gb_ols <- as_tsibble(readRDS(file = "fc10_gb.rds")) %>% filter(.model == "o
 fc20_gb_ols <- as_tsibble(readRDS(file = "fc20_gb.rds")) %>% filter(.model == "ols_mod1")
 fc30_gb_ols <- as_tsibble(readRDS(file = "fc30_gb.rds")) %>% filter(.model == "ols_mod1")
 fc1_gb_ols <- as_tsibble(readRDS(file = "fc1_gb.rds")) %>% filter(.model == "ols_mod1")
-
-fc20_gb_ols <- fc20_gb_ols %>% mutate(.mean = .mean * 2)
-fc30_gb_ols <- fc30_gb_ols %>% mutate(.mean = .mean * 3)
-fc1_gb_ols <- fc1_gb_ols %>% mutate(.mean = .mean * 6)
 
 gb_ols <- NULL
 
@@ -427,10 +387,6 @@ fc20_gb_mint <- as_tsibble(readRDS(file = "fc20_gb.rds")) %>% filter(.model == "
 fc30_gb_mint <- as_tsibble(readRDS(file = "fc30_gb.rds")) %>% filter(.model == "mint_mod1")
 fc1_gb_mint <- as_tsibble(readRDS(file = "fc1_gb.rds")) %>% filter(.model == "mint_mod1")
 
-fc20_gb_mint <- fc20_gb_mint %>% mutate(.mean = .mean * 2)
-fc30_gb_mint <- fc30_gb_mint %>% mutate(.mean = .mean * 3)
-fc1_gb_mint <- fc1_gb_mint %>% mutate(.mean = .mean * 6)
-
 gb_mint <- NULL
 
 gb_mint$k1 <- to_matrix_for_ts(fc10_gb_mint, ".mean")
@@ -450,10 +406,6 @@ fc20_gb <- as_tsibble(readRDS(file = "fc20_gb.rds")) %>% filter(.model == "mod1"
 fc30_gb <- as_tsibble(readRDS(file = "fc30_gb.rds")) %>% filter(.model == "mod1")
 fc1_gb <- as_tsibble(readRDS(file = "fc1_gb.rds")) %>% filter(.model == "mod1")
 
-fc20_gb <- fc20_gb %>% mutate(.mean = .mean * 2)
-fc30_gb <- fc30_gb %>% mutate(.mean = .mean * 3)
-fc1_gb <- fc1_gb %>% mutate(.mean = .mean * 6)
-
 gb <- NULL
 
 gb$k1 <- to_matrix_for_ts(fc10_gb, ".mean")
@@ -472,10 +424,6 @@ fc10_benchmark <- as_tsibble(readRDS(file = "fc10_benchmark.rds"))
 fc20_benchmark <- as_tsibble(readRDS(file = "fc20_benchmark.rds"))
 fc30_benchmark <- as_tsibble(readRDS(file = "fc30_benchmark.rds"))
 fc1_benchmark <- as_tsibble(readRDS(file = "fc1_benchmark.rds"))
-
-fc20_benchmark <- fc20_benchmark %>% mutate(.mean = .mean * 2)
-fc30_benchmark <- fc30_benchmark %>% mutate(.mean = .mean * 3)
-fc1_benchmark <- fc1_benchmark %>% mutate(.mean = .mean * 6)
 
 benchmark <- NULL
 
@@ -497,40 +445,44 @@ min20 <- readRDS(file = "min20.rds")
 min30 <- readRDS(file = "min30.rds")
 hr1 <- readRDS(file = "hr1.rds")
 
-min20 <- min20 %>% mutate(Power = Power * 2)
-min30 <- min30 %>% mutate(Power = Power * 3)
-hr1 <- hr1 %>% mutate(Power = Power * 6)
-
 test <- NULL
 values <- NULL
 
 TrainingProportion = 0.9
 
-values$k1 <- to_matrix_for_ts(min10, "Power")
+values$k1 <- to_matrix_for_ts(min10, "Energy")
 values$k1 <- ts(values$k1, frequency = 6)
-values$k2 <- to_matrix_for_ts(min20, "Power")
+values$k2 <- to_matrix_for_ts(min20, "Energy")
 values$k2 <- ts(values$k2, frequency = 3)
-values$k3 <- to_matrix_for_ts(min30, "Power")
+values$k3 <- to_matrix_for_ts(min30, "Energy")
 values$k3 <- ts(values$k3, frequency = 2)
-values$k6 <- to_matrix_for_ts(hr1, "Power")
+values$k6 <- to_matrix_for_ts(hr1, "Energy")
 values$k6 <- ts(values$k6, frequency = 1)
 
-test$k1 <- values$k1[-c(1:ceiling(dim(values$k1)[1]*TrainingProportion)), ]
-test$k2 <- values$k2[-c(1:ceiling(dim(values$k2)[1]*TrainingProportion)), ]
-test$k3 <- values$k3[-c(1:ceiling(dim(values$k3)[1]*TrainingProportion)), ]
-test$k6 <- values$k6[-c(1:ceiling(dim(values$k6)[1]*TrainingProportion)), ]
+# use this with the entire dataset
+#test$k1 <- values$k1[-c(1:ceiling(dim(values$k1)[1]*TrainingProportion)), ]
+#test$k2 <- values$k2[-c(1:ceiling(dim(values$k2)[1]*TrainingProportion)), ]
+#test$k3 <- values$k3[-c(1:ceiling(dim(values$k3)[1]*TrainingProportion)), ]
+#test$k6 <- values$k6[-c(1:ceiling(dim(values$k6)[1]*TrainingProportion)), ]
+
+# use this for small subset of data (can adjust as needed)
+test$k1 <- values$k1[-c(1:dim(values$k1)[1])-7, ]
+test$k2 <- values$k2[-c(1:dim(values$k1)[1])-14, ]
+test$k3 <- values$k3[-c(1:dim(values$k1)[1])-21, ]
+test$k6 <- values$k6[-c(1:dim(values$k1)[1])-42, ]
 
 test <- t(do.call(rbind, rev(test)))
 obs <- values
 
 #### Rename columns ####
 kset <- c(6, 3, 2, 1)
-h <- 876
+# need to change this number depending on if using limited subset of full data (for speed) - 876 for full dataset
+h <- 7
 colnames(benchmark) <- paste("k", rep(kset, h * rev(kset)), "_h",
-                        do.call("c", as.list(sapply(
-                          rev(kset) * h,
-                          function(x) seq(1:x)))),
-                        sep = "")
+                             do.call("c", as.list(sapply(
+                               rev(kset) * h,
+                               function(x) seq(1:x)))),
+                             sep = "")
 
 
 colnames(test) <- paste("k", rep(kset, h * rev(kset)), "_h",
@@ -540,16 +492,16 @@ colnames(test) <- paste("k", rep(kset, h * rev(kset)), "_h",
                         sep = "")
 
 colnames(lr) <- paste("k", rep(kset, h * rev(kset)), "_h",
-                        do.call("c", as.list(sapply(
-                          rev(kset) * h,
-                          function(x) seq(1:x)))),
-                        sep = "")
-
-colnames(lr_bu) <- paste("k", rep(kset, h * rev(kset)), "_h",
                       do.call("c", as.list(sapply(
                         rev(kset) * h,
                         function(x) seq(1:x)))),
                       sep = "")
+
+colnames(lr_bu) <- paste("k", rep(kset, h * rev(kset)), "_h",
+                         do.call("c", as.list(sapply(
+                           rev(kset) * h,
+                           function(x) seq(1:x)))),
+                         sep = "")
 
 colnames(lr_td) <- paste("k", rep(kset, h * rev(kset)), "_h",
                          do.call("c", as.list(sapply(
@@ -564,16 +516,16 @@ colnames(lr_mo) <- paste("k", rep(kset, h * rev(kset)), "_h",
                          sep = "")
 
 colnames(lr_ols) <- paste("k", rep(kset, h * rev(kset)), "_h",
-                         do.call("c", as.list(sapply(
-                           rev(kset) * h,
-                           function(x) seq(1:x)))),
-                         sep = "")
+                          do.call("c", as.list(sapply(
+                            rev(kset) * h,
+                            function(x) seq(1:x)))),
+                          sep = "")
 
 colnames(lr_mint) <- paste("k", rep(kset, h * rev(kset)), "_h",
-                         do.call("c", as.list(sapply(
-                           rev(kset) * h,
-                           function(x) seq(1:x)))),
-                         sep = "")
+                           do.call("c", as.list(sapply(
+                             rev(kset) * h,
+                             function(x) seq(1:x)))),
+                           sep = "")
 
 colnames(gb) <- paste("k", rep(kset, h * rev(kset)), "_h",
                       do.call("c", as.list(sapply(
@@ -814,11 +766,6 @@ fc20_lr_residuals <- readRDS(file = "fc20_lr_residuals.rds") %>% filter(.model =
 fc30_lr_residuals <- readRDS(file = "fc30_lr_residuals.rds") %>% filter(.model == "mod1") %>% group_by(Group, Subgroup, .model)
 fc1_lr_residuals <- readRDS(file = "fc1_lr_residuals.rds") %>% filter(.model == "mod1") %>% group_by(Group, Subgroup, .model)
 
-#### change means to sums for temporal hierarchy ####
-fc20_lr_residuals <- fc20_lr_residuals %>% mutate(.resid = .resid * 2)
-fc30_lr_residuals <- fc30_lr_residuals %>% mutate(.resid = .resid * 3)
-fc1_lr_residuals <- fc1_lr_residuals %>% mutate(.resid = .resid * 6)
-
 base_lr <- NULL
 residuals <- NULL
 
@@ -906,8 +853,8 @@ write.csv(c(rRMSE_tcs_recf[[2]],rRMSE_tcs_recf[[3]],rRMSE_tcs_recf[[4]],rRMSE_tc
 #### Heuristic first-cross-sectional-then-temporal cross-temporal reconciliation using t-acov + cs-shr (Di Fonzo and Girolimetto, 2020) ####
 
 cst_recf <- as.matrix(cstrec(FoReco_data$base, m = 6, C = FoReco_data$C,
-                   thf_comb = "acov", hts_comb = "shr",
-                   res = FoReco_data$res)$recf)
+                             thf_comb = "acov", hts_comb = "shr",
+                             res = FoReco_data$res)$recf)
 
 # have to set this since the FoReco package has a bug that changes column names for some reason
 colnames(cst_recf) <- colnames(thf_recf)
@@ -1018,11 +965,6 @@ fc10_gb_residuals <- readRDS(file = "fc10_gb_residuals.rds") %>% filter(.model =
 fc20_gb_residuals <- readRDS(file = "fc20_gb_residuals.rds") %>% filter(.model == "mod1") %>% group_by(Group, Subgroup, .model)
 fc30_gb_residuals <- readRDS(file = "fc30_gb_residuals.rds") %>% filter(.model == "mod1") %>% group_by(Group, Subgroup, .model)
 fc1_gb_residuals <- readRDS(file = "fc1_gb_residuals.rds") %>% filter(.model == "mod1") %>% group_by(Group, Subgroup, .model)
-
-#### change means to sums for temporal hierarchy ####
-fc20_gb_residuals <- fc20_gb_residuals %>% mutate(.resid = .resid * 2)
-fc30_gb_residuals <- fc30_gb_residuals %>% mutate(.resid = .resid * 3)
-fc1_gb_residuals <- fc1_gb_residuals %>% mutate(.resid = .resid * 6)
 
 base_gb <- NULL
 residuals <- NULL
@@ -1189,98 +1131,3 @@ write.csv(c(rRMSE_gb_bu_ct[[2]],rRMSE_gb_bu_ct[[3]],rRMSE_gb_bu_ct[[4]],rRMSE_gb
 
 write.csv(c(rMAE_gb[[2]],rMAE_gb[[3]],rMAE_gb[[4]],rMAE_gb[[5]]), "nemenyi_rMAE_gb.csv")
 write.csv(c(rRMSE_gb[[2]],rRMSE_gb[[3]],rRMSE_gb[[4]],rRMSE_gb[[5]]), "nemenyi_rRMSE_gb.csv")
-
-#### Nemenyi Test ####
-library(tsutils)
-
-# cross-sec
-# figs 6'x6'
-nem_cross_sec <- read_excel("Nemenyi-Cross-Sectional.xlsx")
-
-
-x_rMAE <- as.matrix(nem_cross_sec[,1:12])
-x_rRMSE <- as.matrix(nem_cross_sec[,13:24])
-
-colnames(x_rMAE) <- colnames(nem_cross_sec[1:12])
-colnames(x_rRMSE) <- colnames(nem_cross_sec[13:24])
-
-x_LR_rMAE <- x_rMAE[,1:6]
-x_LR_rRMSE <- x_rRMSE[,1:6]
-
-x_gb_rMAE <- x_rMAE[,7:12]
-x_gb_rRMSE <- x_rRMSE[,7:12]
-
-tmp1_rRMSE <- x_LR_rRMSE
-tmp1_rMAE <- x_LR_rMAE
-
-nemenyi(x_rMAE, plottype = "mcb")
-nemenyi(x_rRMSE, plottype = "mcb")
-nemenyi(x_LR_rMAE, plottype = "mcb")
-nemenyi(x_LR_rRMSE, plottype = "mcb")
-nemenyi(x_gb_rMAE, plottype = "mcb")
-nemenyi(x_gb_rRMSE, plottype = "mcb")
-
-# now cross-temp
-nem_cross_temp <- read_excel("Nemenyi-Cross-Temporal.xlsx")
-
-x_rMAE <- as.matrix(nem_cross_temp[,1:14])
-x_rRMSE <- as.matrix(nem_cross_temp[,15:28])
-
-colnames(x_rMAE) <- colnames(nem_cross_temp[1:14])
-colnames(x_rRMSE) <- colnames(nem_cross_temp[15:28])
-
-x_LR_rMAE <- x_rMAE[,1:7]
-x_LR_rRMSE <- x_rRMSE[,1:7]
-
-x_gb_rMAE <- x_rMAE[,8:14]
-x_gb_rRMSE <- x_rRMSE[,8:14]
-
-nemenyi(x_rMAE, plottype = "mcb")
-nemenyi(x_rRMSE, plottype = "mcb")
-nemenyi(x_LR_rMAE, plottype = "mcb")
-nemenyi(x_LR_rRMSE, plottype = "mcb")
-nemenyi(x_gb_rMAE, plottype = "mcb")
-nemenyi(x_gb_rRMSE, plottype = "mcb")
-
-#### line plot for accuracy metric ####
-# cross-sectional
-# 10'x5'
-AvgRelRMSE_lr = c(0.9660,0.9673,0.9559,0.9634,0.9566,0.9519)
-AvgRelRMSE_lgbm = c(0.9724,0.9717,0.9800,0.9767,0.9745,0.9665)
-AvgRelMAE_lr = c(1.039,1.042,1.010,1.030,1.014,1.010)
-AvgRelMAE_lgbm = c(1.048,1.049,1.043,1.047,1.038,1.032)
-
-x = c(1,2,3,4,5,6)
-recon <- list("Unreconciled", "BU", "TD", "MO", "OLS", "MinT-Shr")
-
-plot( 0, type="n", xlim=c(0.5,6.5), ylim=c(1.01,1.05), ylab="AvgRelMAE", xaxt='n', xlab=element_blank())
-axis(1, at=1:6, labels=recon)
-lines(x, AvgRelMAE_lr, col="red")
-points(x, AvgRelMAE_lr, col="red", pch=15)
-lines(x, AvgRelMAE_lgbm, col="blue")
-points(x, AvgRelMAE_lgbm, col="blue", pch=15)
-
-legend( x="topright", 
-        legend=c("LR Base Forecasts","LightGBM Base Forecasts"),
-        col=c("red","blue"), lwd=1, lty=c(1,1), 
-        pch=c(NA,NA) )
-
-# cross-temporal
-AvgRelRMSE_lr = c(0.9660,0.9087,0.9391,0.9100,0.9187,0.9188,0.9091)
-AvgRelRMSE_lgbm = c(0.9724,0.9107,0.9379,0.9160,0.9262,0.9255,0.9140)
-AvgRelMAE_lr = c(1.039,0.970,1.015,0.967,0.980,0.980,0.965)
-AvgRelMAE_lgbm = c(1.048,0.978,1.015,0.977,0.991,0.990,0.975)
-x = c(1,2,3,4,5,6,7)
-recon <- list("Unreconciled", "BU-CT", "THF", "TCS", "CST", "ITE", "OCT")
-
-plot( 0, type="n", xlim=c(0.5,7.5), ylim=c(0.96,1.05), ylab="AvgRelMAE", xaxt='n', xlab=element_blank())
-axis(1, at=1:7, labels=recon)
-lines(x, AvgRelMAE_lr, col="red")
-points(x, AvgRelMAE_lr, col="red", pch=15)
-lines(x, AvgRelMAE_lgbm, col="blue")
-points(x, AvgRelMAE_lgbm, col="blue", pch=15)
-
-legend( x="topright", 
-        legend=c("LR Base Forecasts","LightGBM Base Forecasts"),
-        col=c("red","blue"), lwd=1, lty=c(1,1), 
-        pch=c(NA,NA) )

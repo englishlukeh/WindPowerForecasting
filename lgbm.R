@@ -30,7 +30,6 @@ specials_lgbm <- new_specials(
   .required_specials = c("hyperparameters","xreg"),
   .xreg_specials = names(common_xregs),
 )
-
 train_lgbm <- function(.data, specials, ...){
   mv <- tsibble::measured_vars(.data)
   y <- .data[[mv]]
