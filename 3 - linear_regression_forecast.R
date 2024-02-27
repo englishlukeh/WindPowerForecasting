@@ -16,7 +16,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set this to your w
 # set the proportion of training set
 TrainingProportion <- 0.90
 # set number of threads
-numThreads = 3;
+numThreads = 1;
 
 min10 <- readRDS(file = "min10_wFeatures.rds")
 min20 <- readRDS(file = "min20_wFeatures.rds")
@@ -26,7 +26,8 @@ hr1 <- readRDS(file = "hr1_wFeatures.rds")
 #### Time series linear regression with feature engineering - 10 minutely ####
 #We use TSCV to evaluate the model
 
-min10_test <- min10 %>% filter_index("2021-06-20" ~ "2021-06-30")
+min10_test <- min10 #%>% filter_index("2021-06-20" ~ "2021-06-30")
+rm(min10)
 
 gc()
 
@@ -37,10 +38,10 @@ N = nrow(min10_test)/n_keys(min10_test)
 fc10_lr <- NULL;
 
 # set up parallelisation
-registerDoParallel(cl <- makeCluster(numThreads))
+#registerDoParallel(cl <- makeCluster(numThreads))
 
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
-fc10_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-6,6), .combine = bind_rows, .packages = c("fpp3")) %dopar%
+fc10_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-6,6), .combine = bind_rows, .packages = c("fpp3")) %do%
   {
     # training set is from elements 1 up to i, i+1 is 1-step forecast
     
@@ -195,14 +196,15 @@ fc10_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-6,6), .combine = bind
     
     return(fc_lr)
   }
-stopCluster(cl)
+#stopCluster(cl)
 
 saveRDS(fc10_lr, file = "fc10_lr.rds")
 
 #### Time series linear regression with feature engineering - 20 minutely ####
 # again we use TSCV to evaluate the model
 
-min20_test <- min20 %>% filter_index("2021-06-20" ~ "2021-06-30")
+min20_test <- min20 #%>% filter_index("2021-06-20" ~ "2021-06-30")
+rm(min20)
 
 gc()
 
@@ -308,7 +310,8 @@ saveRDS(fc20_lr, file = "fc20_lr.rds")
 #### Time series linear regression with feature engineering - 30 minutely ####
 # again we use TSCV to evaluate the model
 
-min30_test <- min30 %>% filter_index("2021-06-20" ~ "2021-06-30")
+min30_test <- min30 #%>% filter_index("2021-06-20" ~ "2021-06-30")
+rm(min30)
 
 gc()
 
@@ -393,7 +396,7 @@ saveRDS(fc30_lr, file = "fc30_lr.rds")
 # initialize accuracy tibble
 fc1_lr <- NULL;
 
-hr1_test <- hr1 %>% filter_index("2021-06-20" ~ "2021-06-30")
+hr1_test <- hr1 #%>% filter_index("2021-06-20" ~ "2021-06-30")
 
 gc()
 
@@ -403,12 +406,15 @@ N = nrow(hr1_test)/n_keys(hr1_test)
 # set up parallelisation
 registerDoParallel(cl <- makeCluster(numThreads))
 
+
+# run half at a time and join .rds forecasts later if not enough memory
 # do our TSCV manually, starting from 90% of the dataset up to the second last element
 fc1_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_rows, .packages = c("fpp3")) %dopar%
   {
+    gc()
     
     # initialize accuracy tibble
-    fc_lr <- NULL;
+    fc_lr_tmp <- NULL;
     
     # compute fit
     fit_total <- hr1_test %>%
@@ -430,17 +436,21 @@ fc1_lr <- foreach(i = seq(ceiling(N*TrainingProportion),N-1,1), .combine = bind_
         residuals()
       saveRDS(fitted, file = "fc1_lr_fitted.rds")
       saveRDS(residuals, file = "fc1_lr_residuals.rds")
+      rm(fitted)
+      rm(residuals)
     }
     
     # forecast with new data
-    fc_lr <- fc_lr %>%
+    fc_lr_tmp <- fc_lr_tmp %>%
       bind_rows(fit_total %>%
                   forecast(new_data = hr1_test %>%
                              group_by(Group, Subgroup) %>%
                              dplyr::slice(i+1)))
     
-    return(fc_lr)
+    return(fc_lr_tmp)
   }
 stopCluster(cl)
+
+gc()
 
 saveRDS(fc1_lr, file = "fc1_lr.rds")

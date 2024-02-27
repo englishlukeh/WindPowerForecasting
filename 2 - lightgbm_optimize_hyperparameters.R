@@ -82,7 +82,7 @@ N = nrow(min10)/n_keys(min10)
 
 errors <- data.frame()
 
-training_percentages = c(0.8,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88)
+training_percentages = c(0.8)
 
 for (i in seq_along(training_percentages)){
   
@@ -100,19 +100,19 @@ for (i in seq_along(training_percentages)){
                    dplyr::slice(ceiling(N*ind)+1:floor(N*(ind + 0.1))))
   
   validation_x <- to_x(min10 %>%
-                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02))))
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.2))))
   validation_y <- to_y(min10 %>%
-                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02))))
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.2))))
   
   dtrain = lgb.Dataset(train_x, label = train_y)
   dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
   
   grid_search <- expand.grid(
-    num_leaves = c(140),
-    max_depth= c(13),
-    learning_rate= c(0.1),
-    min_data_in_leaf = c(140),
-    linear_lambda = c(1,2,3,4,5))
+    num_leaves = c(90,100,110,120),
+    max_depth= c(8,9,10,11),
+    learning_rate= c(0.15,0.175,0.2,0.225),
+    min_data_in_leaf = c(200,225,250,2),
+    linear_lambda = c(0))
   
   errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
 }
@@ -125,7 +125,7 @@ N = nrow(min20)/n_keys(min20)
 
 errors <- data.frame()
 
-training_percentages = c(0.8,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88)
+training_percentages = c(0.8)
 
 for (i in seq_along(training_percentages)){
   ind = training_percentages[i]
@@ -140,19 +140,19 @@ for (i in seq_along(training_percentages)){
                    dplyr::slice(ceiling(N*ind)+1:floor(N*(ind + 0.1))))
   
   validation_x <- to_x(min20 %>%
-                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02))))
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.2))))
   validation_y <- to_y(min20 %>%
-                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02))))
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.2))))
   
   dtrain = lgb.Dataset(train_x, label = train_y)
   dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
   
   grid_search <- expand.grid(
-    num_leaves = c(100),
-    max_depth= c(9),
-    learning_rate= c(0.1),
-    min_data_in_leaf = c(180),
-    linear_lambda = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15))
+    num_leaves = c(110,120,130,140),
+    max_depth= c(7,8,9,10),
+    learning_rate= c(0.15,0.175,0.2,0.215,0.225),
+    min_data_in_leaf = c(275,300,325,350),
+    linear_lambda = c(0))
   
   errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
 }
@@ -165,7 +165,7 @@ N = nrow(min30)/n_keys(min30)
 
 errors <- data.frame()
 
-training_percentages = c(0.8,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88)
+training_percentages = c(0.8)
 
 for (i in seq_along(training_percentages)){
   ind = training_percentages[i]
@@ -180,19 +180,19 @@ for (i in seq_along(training_percentages)){
                    dplyr::slice(ceiling(N*ind)+1:floor(N*(ind + 0.1))))
   
   validation_x <- to_x(min30 %>%
-                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02))))
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.2))))
   validation_y <- to_y(min30 %>%
-                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02))))
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.2))))
   
   dtrain = lgb.Dataset(train_x, label = train_y)
   dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
   
   grid_search <- expand.grid(
-    num_leaves = c(80),
-    max_depth= c(7),
-    learning_rate= c(0.1),
-    min_data_in_leaf = c(200),
-    linear_lambda = c(2,3,4,5))
+    num_leaves = c(60,80,100,120),
+    max_depth= c(7,8,9,10),
+    learning_rate= c(0.75,0.1,0.125),
+    min_data_in_leaf = c(125,150,175,200,225),
+    linear_lambda = c(0))
   
   errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
 }
@@ -205,7 +205,7 @@ N = nrow(hr1)/n_keys(hr1)
 
 errors <- data.frame()
 
-training_percentages = c(0.8,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88)
+training_percentages = c(0.8)
 
 for (i in seq_along(training_percentages)){
   gc()
@@ -222,19 +222,20 @@ for (i in seq_along(training_percentages)){
                    dplyr::slice(ceiling(N*ind)+1:floor(N*(ind + 0.1))))
   
   validation_x <- to_x(hr1 %>%
-                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02))))
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.2))))
   validation_y <- to_y(hr1 %>%
-                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.02))))
+                         dplyr::slice(floor(N*(ind + 0.1))+1:floor(N*(ind + 0.2))))
   
   dtrain = lgb.Dataset(train_x, label = train_y)
   dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
   
   grid_search <- expand.grid(
-    num_leaves = c(130),
-    max_depth= c(8),
-    learning_rate= c(0.1),
-    min_data_in_leaf = c(200),
-    linear_lambda = c(0,1,2,3,4,5,6,7,8,9,10))
+    num_leaves = c(60,80,100,120),
+    max_depth= c(7,8,9,10),
+    learning_rate= c(0.1,0.15,0.175,0.2,0.225,0.25),
+    min_data_in_leaf = c(150,175,200,225,250),
+    linear_lambda = c(0))
+  
   
   errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
 }
