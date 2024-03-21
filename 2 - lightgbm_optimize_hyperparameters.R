@@ -108,10 +108,10 @@ for (i in seq_along(training_percentages)){
   dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
   
   grid_search <- expand.grid(
-    num_leaves = c(90,100,110,120),
-    max_depth= c(8,9,10,11),
-    learning_rate= c(0.15,0.175,0.2,0.225),
-    min_data_in_leaf = c(200,225,250,2),
+    num_leaves = c(110,120,130,140,150),
+    max_depth= c(7,8,9),
+    learning_rate= c(0.75,0.1,0.125),
+    min_data_in_leaf = c(175,200,225,250),
     linear_lambda = c(0))
   
   errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
@@ -128,6 +128,7 @@ errors <- data.frame()
 training_percentages = c(0.8)
 
 for (i in seq_along(training_percentages)){
+  gc()
   ind = training_percentages[i]
   
   train_x <- to_x(min20 %>%
@@ -148,10 +149,10 @@ for (i in seq_along(training_percentages)){
   dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
   
   grid_search <- expand.grid(
-    num_leaves = c(110,120,130,140),
-    max_depth= c(7,8,9,10),
-    learning_rate= c(0.15,0.175,0.2,0.215,0.225),
-    min_data_in_leaf = c(275,300,325,350),
+    num_leaves = c(80,90,100,110,120),
+    max_depth= c(6,7,8,9,10,11,12,13),
+    learning_rate= c(0.5,0.75,0.1,0.125,0.15),
+    min_data_in_leaf = c(250,275,300,325,350,375,400,425),
     linear_lambda = c(0))
   
   errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))
@@ -168,6 +169,7 @@ errors <- data.frame()
 training_percentages = c(0.8)
 
 for (i in seq_along(training_percentages)){
+  gc()
   ind = training_percentages[i]
   
   train_x <- to_x(min30 %>%
@@ -188,10 +190,10 @@ for (i in seq_along(training_percentages)){
   dtest = lgb.Dataset.create.valid(dtrain, test_x, label = test_y)
   
   grid_search <- expand.grid(
-    num_leaves = c(60,80,100,120),
-    max_depth= c(7,8,9,10),
-    learning_rate= c(0.75,0.1,0.125),
-    min_data_in_leaf = c(125,150,175,200,225),
+    num_leaves = c(50,70,100,130,160,180,200,250),
+    max_depth= c(5,6,7,8,9,10,11),
+    learning_rate= c(0.1,0.15,0.175,0.2),
+    min_data_in_leaf = c(100,150,200,250,300,350,400),
     linear_lambda = c(0))
   
   errors <- errors %>% rbind(tuning_para(dtrain, dtest, validation_x, validation_y))

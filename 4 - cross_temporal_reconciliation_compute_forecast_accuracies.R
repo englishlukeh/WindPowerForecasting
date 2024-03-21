@@ -26,35 +26,27 @@ to_matrix_for_ts <- function(data, variable){
   matrix_tmp[,1] <- (data %>% filter(is_aggregated(Group), is_aggregated(Subgroup)))[[variable]]
   matrix_tmp[,2] <- (data %>% filter(Group == "A", is_aggregated(Subgroup)))[[variable]]
   matrix_tmp[,3] <- (data %>% filter(Group == "B", is_aggregated(Subgroup)))[[variable]]
-  matrix_tmp[,4] <- (data %>% filter(Group == "C", is_aggregated(Subgroup)))[[variable]]
-  matrix_tmp[,5] <- (data %>% filter(Group == "D", is_aggregated(Subgroup)))[[variable]]
-  matrix_tmp[,5] <- (data %>% filter(Group == "D", is_aggregated(Subgroup)))[[variable]]
-  matrix_tmp[,6] <- (data %>% filter(Group == "A", Subgroup == "A1"))[[variable]]
-  matrix_tmp[,7] <- (data %>% filter(Group == "A", Subgroup == "A2"))[[variable]]
-  matrix_tmp[,8] <- (data %>% filter(Group == "A", Subgroup == "A3"))[[variable]]
-  matrix_tmp[,9] <- (data %>% filter(Group == "A", Subgroup == "A4"))[[variable]]
-  matrix_tmp[,10] <- (data %>% filter(Group == "A", Subgroup == "A5"))[[variable]]
-  matrix_tmp[,11] <- (data %>% filter(Group == "A", Subgroup == "A6"))[[variable]]
-  matrix_tmp[,12] <- (data %>% filter(Group == "A", Subgroup == "A7"))[[variable]]
-  matrix_tmp[,13] <- (data %>% filter(Group == "B", Subgroup == "B1"))[[variable]]
-  matrix_tmp[,14] <- (data %>% filter(Group == "B", Subgroup == "B2"))[[variable]]
-  matrix_tmp[,15] <- (data %>% filter(Group == "B", Subgroup == "B3"))[[variable]]
-  matrix_tmp[,16] <- (data %>% filter(Group == "B", Subgroup == "B4"))[[variable]]
-  matrix_tmp[,17] <- (data %>% filter(Group == "B", Subgroup == "B5"))[[variable]]
-  matrix_tmp[,18] <- (data %>% filter(Group == "B", Subgroup == "B6"))[[variable]]
-  matrix_tmp[,19] <- (data %>% filter(Group == "B", Subgroup == "B7"))[[variable]]
-  matrix_tmp[,20] <- (data %>% filter(Group == "B", Subgroup == "B8"))[[variable]]
-  matrix_tmp[,21] <- (data %>% filter(Group == "B", Subgroup == "B9"))[[variable]]
-  matrix_tmp[,22] <- (data %>% filter(Group == "C", Subgroup == "C1"))[[variable]]
-  matrix_tmp[,23] <- (data %>% filter(Group == "C", Subgroup == "C2"))[[variable]]
-  matrix_tmp[,24] <- (data %>% filter(Group == "C", Subgroup == "C3"))[[variable]]
-  matrix_tmp[,25] <- (data %>% filter(Group == "D", Subgroup == "D1"))[[variable]]
-  matrix_tmp[,26] <- (data %>% filter(Group == "D", Subgroup == "D2"))[[variable]]
-  matrix_tmp[,27] <- (data %>% filter(Group == "D", Subgroup == "D3"))[[variable]]
-  matrix_tmp[,28] <- (data %>% filter(Group == "D", Subgroup == "D4"))[[variable]]
-  matrix_tmp[,29] <- (data %>% filter(Group == "D", Subgroup == "D5"))[[variable]]
-  matrix_tmp[,30] <- (data %>% filter(Group == "D", Subgroup == "D6"))[[variable]]
-  colnames(matrix_tmp) <- c("T", "A", "B", "C", "D", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "C1", "C2", "C3", "D1", "D2", "D3", "D4", "D5", "D6")
+  matrix_tmp[,4] <- (data %>% filter(Group == "A", Subgroup == "A1"))[[variable]]
+  matrix_tmp[,5] <- (data %>% filter(Group == "A", Subgroup == "A2"))[[variable]]
+  matrix_tmp[,6] <- (data %>% filter(Group == "A", Subgroup == "A4"))[[variable]]
+  matrix_tmp[,7] <- (data %>% filter(Group == "A", Subgroup == "A5"))[[variable]]
+  matrix_tmp[,8] <- (data %>% filter(Group == "A", Subgroup == "A6"))[[variable]]
+  matrix_tmp[,9] <- (data %>% filter(Group == "A", Subgroup == "A7"))[[variable]]
+  matrix_tmp[,10] <- (data %>% filter(Group == "A", Subgroup == "A8"))[[variable]]
+  matrix_tmp[,11] <- (data %>% filter(Group == "A", Subgroup == "A9"))[[variable]]
+  matrix_tmp[,12] <- (data %>% filter(Group == "A", Subgroup == "A10"))[[variable]]
+  matrix_tmp[,13] <- (data %>% filter(Group == "A", Subgroup == "A11"))[[variable]]
+  matrix_tmp[,14] <- (data %>% filter(Group == "A", Subgroup == "A12"))[[variable]]
+  matrix_tmp[,15] <- (data %>% filter(Group == "A", Subgroup == "A13"))[[variable]]
+  matrix_tmp[,16] <- (data %>% filter(Group == "A", Subgroup == "A14"))[[variable]]
+  matrix_tmp[,17] <- (data %>% filter(Group == "A", Subgroup == "A15"))[[variable]]
+  matrix_tmp[,18] <- (data %>% filter(Group == "B", Subgroup == "B1"))[[variable]]
+  matrix_tmp[,19] <- (data %>% filter(Group == "B", Subgroup == "B2"))[[variable]]
+  matrix_tmp[,20] <- (data %>% filter(Group == "B", Subgroup == "B3"))[[variable]]
+  matrix_tmp[,21] <- (data %>% filter(Group == "B", Subgroup == "B4"))[[variable]]
+  matrix_tmp[,22] <- (data %>% filter(Group == "B", Subgroup == "B5"))[[variable]]
+  matrix_tmp[,23] <- (data %>% filter(Group == "B", Subgroup == "B6"))[[variable]]
+  colnames(matrix_tmp) <- c("T", "A", "B", "A1", "A2", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12", "A13", "A14", "A15", "B1", "B2", "B3", "B4", "B5", "B6")
   
   return(matrix_tmp)
 }
@@ -81,20 +73,20 @@ compute_rMAE <- function(error, naive_error_10, naive_error_20, naive_error_30, 
   
   # populate relative error matrix
   # we calculate geometric mean using exp(mean(log(vector))), taken from https://stackoverflow.com/questions/2602583/geometric-mean-is-there-a-built-in
-  error[1,1] <- exp(mean(log(error_10[6:30])))
-  error[1,2] <- exp(mean(log(error_10[2:5])))
+  error[1,1] <- exp(mean(log(error_10[4:23])))
+  error[1,2] <- exp(mean(log(error_10[2:3])))
   error[1,3] <- exp(mean(log(error_10[1])))
   
-  error[2,1] <- exp(mean(log(error_20[6:30])))
-  error[2,2] <- exp(mean(log(error_20[2:5])))
+  error[2,1] <- exp(mean(log(error_20[4:23])))
+  error[2,2] <- exp(mean(log(error_20[2:3])))
   error[2,3] <- exp(mean(log(error_20[1])))
   
-  error[3,1] <- exp(mean(log(error_30[6:30])))
-  error[3,2] <- exp(mean(log(error_30[2:5])))
+  error[3,1] <- exp(mean(log(error_30[4:23])))
+  error[3,2] <- exp(mean(log(error_30[2:3])))
   error[3,3] <- exp(mean(log(error_30[1])))
   
-  error[4,1] <- exp(mean(log(error_1[6:30])))
-  error[4,2] <- exp(mean(log(error_1[2:5])))
+  error[4,1] <- exp(mean(log(error_1[4:23])))
+  error[4,2] <- exp(mean(log(error_1[2:3])))
   error[4,3] <- exp(mean(log(error_1[1])))
   
   # return matrix of rMAE
@@ -122,20 +114,20 @@ compute_rRMSE <- function(error_squared, naive_error_squared_10, naive_error_squ
   rownames(error_squared) <- c(10,20,30,1)
   
   # populate relative error matrix
-  error_squared[1,1] <- exp(mean(log(error_10_squared[6:30])))
-  error_squared[1,2] <- exp(mean(log(error_10_squared[2:5])))
+  error_squared[1,1] <- exp(mean(log(error_10_squared[4:23])))
+  error_squared[1,2] <- exp(mean(log(error_10_squared[2:3])))
   error_squared[1,3] <- exp(mean(log(error_10_squared[1])))
   
-  error_squared[2,1] <- exp(mean(log(error_20_squared[6:30])))
-  error_squared[2,2] <- exp(mean(log(error_20_squared[2:5])))
+  error_squared[2,1] <- exp(mean(log(error_20_squared[4:23])))
+  error_squared[2,2] <- exp(mean(log(error_20_squared[2:3])))
   error_squared[2,3] <- exp(mean(log(error_20_squared[1])))
   
-  error_squared[3,1] <- exp(mean(log(error_30_squared[6:30])))
-  error_squared[3,2] <- exp(mean(log(error_30_squared[2:5])))
+  error_squared[3,1] <- exp(mean(log(error_30_squared[4:23])))
+  error_squared[3,2] <- exp(mean(log(error_30_squared[2:3])))
   error_squared[3,3] <- exp(mean(log(error_30_squared[1])))
   
-  error_squared[4,1] <- exp(mean(log(error_1_squared[6:30])))
-  error_squared[4,2] <- exp(mean(log(error_1_squared[2:5])))
+  error_squared[4,1] <- exp(mean(log(error_1_squared[4:23])))
+  error_squared[4,2] <- exp(mean(log(error_1_squared[2:3])))
   error_squared[4,3] <- exp(mean(log(error_1_squared[1])))
   
   # return matrix of rRMSE
@@ -189,13 +181,13 @@ fc1_lr_bu <- as_tsibble(readRDS(file = "fc1_lr.rds")) %>% filter(.model == "bu_m
 lr_bu <- NULL
 
 lr_bu$k1 <- to_matrix_for_ts(fc10_lr_bu, ".mean")
-lr_bu$k1 <- ts(lr_bu$k1, frequency = 6, start = c(47304, 1))
+lr_bu$k1 <- ts(lr_bu$k1, frequency = 6, start = c(47412, 1))
 lr_bu$k2 <- to_matrix_for_ts(fc20_lr_bu, ".mean")
-lr_bu$k2 <- ts(lr_bu$k2, frequency = 3, start = c(47304, 1))
+lr_bu$k2 <- ts(lr_bu$k2, frequency = 3, start = c(47412, 1))
 lr_bu$k3 <- to_matrix_for_ts(fc30_lr_bu, ".mean")
-lr_bu$k3 <- ts(lr_bu$k3, frequency = 2, start = c(47304, 1))
+lr_bu$k3 <- ts(lr_bu$k3, frequency = 2, start = c(47412, 1))
 lr_bu$k6 <- to_matrix_for_ts(fc1_lr_bu, ".mean")
-lr_bu$k6 <- ts(lr_bu$k6, frequency = 1, start = c(47304, 1))
+lr_bu$k6 <- ts(lr_bu$k6, frequency = 1, start = c(47412, 1))
 
 lr_bu <- t(do.call(rbind, rev(lr_bu)))
 
@@ -211,13 +203,13 @@ fc1_lr_td <- as_tsibble(readRDS(file = "fc1_lr.rds")) %>% filter(.model == "td_m
 lr_td <- NULL
 
 lr_td$k1 <- to_matrix_for_ts(fc10_lr_td, ".mean")
-lr_td$k1 <- ts(lr_td$k1, frequency = 6, start = c(47304, 1))
+lr_td$k1 <- ts(lr_td$k1, frequency = 6, start = c(47412, 1))
 lr_td$k2 <- to_matrix_for_ts(fc20_lr_td, ".mean")
-lr_td$k2 <- ts(lr_td$k2, frequency = 3, start = c(47304, 1))
+lr_td$k2 <- ts(lr_td$k2, frequency = 3, start = c(47412, 1))
 lr_td$k3 <- to_matrix_for_ts(fc30_lr_td, ".mean")
-lr_td$k3 <- ts(lr_td$k3, frequency = 2, start = c(47304, 1))
+lr_td$k3 <- ts(lr_td$k3, frequency = 2, start = c(47412, 1))
 lr_td$k6 <- to_matrix_for_ts(fc1_lr_td, ".mean")
-lr_td$k6 <- ts(lr_td$k6, frequency = 1, start = c(47304, 1))
+lr_td$k6 <- ts(lr_td$k6, frequency = 1, start = c(47412, 1))
 
 lr_td <- t(do.call(rbind, rev(lr_td)))
 
@@ -231,13 +223,13 @@ fc1_lr_mo <- as_tsibble(readRDS(file = "fc1_lr.rds")) %>% filter(.model == "mo_m
 lr_mo <- NULL
 
 lr_mo$k1 <- to_matrix_for_ts(fc10_lr_mo, ".mean")
-lr_mo$k1 <- ts(lr_mo$k1, frequency = 6, start = c(47304, 1))
+lr_mo$k1 <- ts(lr_mo$k1, frequency = 6, start = c(47412, 1))
 lr_mo$k2 <- to_matrix_for_ts(fc20_lr_mo, ".mean")
-lr_mo$k2 <- ts(lr_mo$k2, frequency = 3, start = c(47304, 1))
+lr_mo$k2 <- ts(lr_mo$k2, frequency = 3, start = c(47412, 1))
 lr_mo$k3 <- to_matrix_for_ts(fc30_lr_mo, ".mean")
-lr_mo$k3 <- ts(lr_mo$k3, frequency = 2, start = c(47304, 1))
+lr_mo$k3 <- ts(lr_mo$k3, frequency = 2, start = c(47412, 1))
 lr_mo$k6 <- to_matrix_for_ts(fc1_lr_mo, ".mean")
-lr_mo$k6 <- ts(lr_mo$k6, frequency = 1, start = c(47304, 1))
+lr_mo$k6 <- ts(lr_mo$k6, frequency = 1, start = c(47412, 1))
 
 lr_mo <- t(do.call(rbind, rev(lr_mo)))
 
@@ -250,13 +242,13 @@ fc1_lr_ols <- as_tsibble(readRDS(file = "fc1_lr.rds")) %>% filter(.model == "ols
 lr_ols <- NULL
 
 lr_ols$k1 <- to_matrix_for_ts(fc10_lr_ols, ".mean")
-lr_ols$k1 <- ts(lr_ols$k1, frequency = 6, start = c(47304, 1))
+lr_ols$k1 <- ts(lr_ols$k1, frequency = 6, start = c(47412, 1))
 lr_ols$k2 <- to_matrix_for_ts(fc20_lr_ols, ".mean")
-lr_ols$k2 <- ts(lr_ols$k2, frequency = 3, start = c(47304, 1))
+lr_ols$k2 <- ts(lr_ols$k2, frequency = 3, start = c(47412, 1))
 lr_ols$k3 <- to_matrix_for_ts(fc30_lr_ols, ".mean")
-lr_ols$k3 <- ts(lr_ols$k3, frequency = 2, start = c(47304, 1))
+lr_ols$k3 <- ts(lr_ols$k3, frequency = 2, start = c(47412, 1))
 lr_ols$k6 <- to_matrix_for_ts(fc1_lr_ols, ".mean")
-lr_ols$k6 <- ts(lr_ols$k6, frequency = 1, start = c(47304, 1))
+lr_ols$k6 <- ts(lr_ols$k6, frequency = 1, start = c(47412, 1))
 
 lr_ols <- t(do.call(rbind, rev(lr_ols)))
 
@@ -270,13 +262,13 @@ fc1_lr_mint <- as_tsibble(readRDS(file = "fc1_lr.rds")) %>% filter(.model == "mi
 lr_mint <- NULL
 
 lr_mint$k1 <- to_matrix_for_ts(fc10_lr_mint, ".mean")
-lr_mint$k1 <- ts(lr_mint$k1, frequency = 6, start = c(47304, 1))
+lr_mint$k1 <- ts(lr_mint$k1, frequency = 6, start = c(47412, 1))
 lr_mint$k2 <- to_matrix_for_ts(fc20_lr_mint, ".mean")
-lr_mint$k2 <- ts(lr_mint$k2, frequency = 3, start = c(47304, 1))
+lr_mint$k2 <- ts(lr_mint$k2, frequency = 3, start = c(47412, 1))
 lr_mint$k3 <- to_matrix_for_ts(fc30_lr_mint, ".mean")
-lr_mint$k3 <- ts(lr_mint$k3, frequency = 2, start = c(47304, 1))
+lr_mint$k3 <- ts(lr_mint$k3, frequency = 2, start = c(47412, 1))
 lr_mint$k6 <- to_matrix_for_ts(fc1_lr_mint, ".mean")
-lr_mint$k6 <- ts(lr_mint$k6, frequency = 1, start = c(47304, 1))
+lr_mint$k6 <- ts(lr_mint$k6, frequency = 1, start = c(47412, 1))
 
 lr_mint <- t(do.call(rbind, rev(lr_mint)))
 
@@ -289,13 +281,13 @@ fc1_lr <- as_tsibble(readRDS(file = "fc1_lr.rds")) %>% filter(.model == "mod1")
 lr <- NULL
 
 lr$k1 <- to_matrix_for_ts(fc10_lr, ".mean")
-lr$k1 <- ts(lr$k1, frequency = 6, start = c(47304, 1))
+lr$k1 <- ts(lr$k1, frequency = 6, start = c(47412, 1))
 lr$k2 <- to_matrix_for_ts(fc20_lr, ".mean")
-lr$k2 <- ts(lr$k2, frequency = 3, start = c(47304, 1))
+lr$k2 <- ts(lr$k2, frequency = 3, start = c(47412, 1))
 lr$k3 <- to_matrix_for_ts(fc30_lr, ".mean")
-lr$k3 <- ts(lr$k3, frequency = 2, start = c(47304, 1))
+lr$k3 <- ts(lr$k3, frequency = 2, start = c(47412, 1))
 lr$k6 <- to_matrix_for_ts(fc1_lr, ".mean")
-lr$k6 <- ts(lr$k6, frequency = 1, start = c(47304, 1))
+lr$k6 <- ts(lr$k6, frequency = 1, start = c(47412, 1))
 
 lr <- t(do.call(rbind, rev(lr)))
 
@@ -309,13 +301,13 @@ fc1_gb_bu <- as_tsibble(readRDS(file = "fc1_gb.rds")) %>% filter(.model == "bu_m
 gb_bu <- NULL
 
 gb_bu$k1 <- to_matrix_for_ts(fc10_gb_bu, ".mean")
-gb_bu$k1 <- ts(gb_bu$k1, frequency = 6, start = c(47304, 1))
+gb_bu$k1 <- ts(gb_bu$k1, frequency = 6, start = c(47412, 1))
 gb_bu$k2 <- to_matrix_for_ts(fc20_gb_bu, ".mean")
-gb_bu$k2 <- ts(gb_bu$k2, frequency = 3, start = c(47304, 1))
+gb_bu$k2 <- ts(gb_bu$k2, frequency = 3, start = c(47412, 1))
 gb_bu$k3 <- to_matrix_for_ts(fc30_gb_bu, ".mean")
-gb_bu$k3 <- ts(gb_bu$k3, frequency = 2, start = c(47304, 1))
+gb_bu$k3 <- ts(gb_bu$k3, frequency = 2, start = c(47412, 1))
 gb_bu$k6 <- to_matrix_for_ts(fc1_gb_bu, ".mean")
-gb_bu$k6 <- ts(gb_bu$k6, frequency = 1, start = c(47304, 1))
+gb_bu$k6 <- ts(gb_bu$k6, frequency = 1, start = c(47412, 1))
 
 gb_bu <- t(do.call(rbind, rev(gb_bu)))
 
@@ -331,13 +323,13 @@ fc1_gb_td <- as_tsibble(readRDS(file = "fc1_gb.rds")) %>% filter(.model == "td_m
 gb_td <- NULL
 
 gb_td$k1 <- to_matrix_for_ts(fc10_gb_td, ".mean")
-gb_td$k1 <- ts(gb_td$k1, frequency = 6, start = c(47304, 1))
+gb_td$k1 <- ts(gb_td$k1, frequency = 6, start = c(47412, 1))
 gb_td$k2 <- to_matrix_for_ts(fc20_gb_td, ".mean")
-gb_td$k2 <- ts(gb_td$k2, frequency = 3, start = c(47304, 1))
+gb_td$k2 <- ts(gb_td$k2, frequency = 3, start = c(47412, 1))
 gb_td$k3 <- to_matrix_for_ts(fc30_gb_td, ".mean")
-gb_td$k3 <- ts(gb_td$k3, frequency = 2, start = c(47304, 1))
+gb_td$k3 <- ts(gb_td$k3, frequency = 2, start = c(47412, 1))
 gb_td$k6 <- to_matrix_for_ts(fc1_gb_td, ".mean")
-gb_td$k6 <- ts(gb_td$k6, frequency = 1, start = c(47304, 1))
+gb_td$k6 <- ts(gb_td$k6, frequency = 1, start = c(47412, 1))
 
 gb_td <- t(do.call(rbind, rev(gb_td)))
 
@@ -351,13 +343,13 @@ fc1_gb_mo <- as_tsibble(readRDS(file = "fc1_gb.rds")) %>% filter(.model == "mo_m
 gb_mo <- NULL
 
 gb_mo$k1 <- to_matrix_for_ts(fc10_gb_mo, ".mean")
-gb_mo$k1 <- ts(gb_mo$k1, frequency = 6, start = c(47304, 1))
+gb_mo$k1 <- ts(gb_mo$k1, frequency = 6, start = c(47412, 1))
 gb_mo$k2 <- to_matrix_for_ts(fc20_gb_mo, ".mean")
-gb_mo$k2 <- ts(gb_mo$k2, frequency = 3, start = c(47304, 1))
+gb_mo$k2 <- ts(gb_mo$k2, frequency = 3, start = c(47412, 1))
 gb_mo$k3 <- to_matrix_for_ts(fc30_gb_mo, ".mean")
-gb_mo$k3 <- ts(gb_mo$k3, frequency = 2, start = c(47304, 1))
+gb_mo$k3 <- ts(gb_mo$k3, frequency = 2, start = c(47412, 1))
 gb_mo$k6 <- to_matrix_for_ts(fc1_gb_mo, ".mean")
-gb_mo$k6 <- ts(gb_mo$k6, frequency = 1, start = c(47304, 1))
+gb_mo$k6 <- ts(gb_mo$k6, frequency = 1, start = c(47412, 1))
 
 gb_mo <- t(do.call(rbind, rev(gb_mo)))
 
@@ -370,13 +362,13 @@ fc1_gb_ols <- as_tsibble(readRDS(file = "fc1_gb.rds")) %>% filter(.model == "ols
 gb_ols <- NULL
 
 gb_ols$k1 <- to_matrix_for_ts(fc10_gb_ols, ".mean")
-gb_ols$k1 <- ts(gb_ols$k1, frequency = 6, start = c(47304, 1))
+gb_ols$k1 <- ts(gb_ols$k1, frequency = 6, start = c(47412, 1))
 gb_ols$k2 <- to_matrix_for_ts(fc20_gb_ols, ".mean")
-gb_ols$k2 <- ts(gb_ols$k2, frequency = 3, start = c(47304, 1))
+gb_ols$k2 <- ts(gb_ols$k2, frequency = 3, start = c(47412, 1))
 gb_ols$k3 <- to_matrix_for_ts(fc30_gb_ols, ".mean")
-gb_ols$k3 <- ts(gb_ols$k3, frequency = 2, start = c(47304, 1))
+gb_ols$k3 <- ts(gb_ols$k3, frequency = 2, start = c(47412, 1))
 gb_ols$k6 <- to_matrix_for_ts(fc1_gb_ols, ".mean")
-gb_ols$k6 <- ts(gb_ols$k6, frequency = 1, start = c(47304, 1))
+gb_ols$k6 <- ts(gb_ols$k6, frequency = 1, start = c(47412, 1))
 
 gb_ols <- t(do.call(rbind, rev(gb_ols)))
 
@@ -390,13 +382,13 @@ fc1_gb_mint <- as_tsibble(readRDS(file = "fc1_gb.rds")) %>% filter(.model == "mi
 gb_mint <- NULL
 
 gb_mint$k1 <- to_matrix_for_ts(fc10_gb_mint, ".mean")
-gb_mint$k1 <- ts(gb_mint$k1, frequency = 6, start = c(47304, 1))
+gb_mint$k1 <- ts(gb_mint$k1, frequency = 6, start = c(47412, 1))
 gb_mint$k2 <- to_matrix_for_ts(fc20_gb_mint, ".mean")
-gb_mint$k2 <- ts(gb_mint$k2, frequency = 3, start = c(47304, 1))
+gb_mint$k2 <- ts(gb_mint$k2, frequency = 3, start = c(47412, 1))
 gb_mint$k3 <- to_matrix_for_ts(fc30_gb_mint, ".mean")
-gb_mint$k3 <- ts(gb_mint$k3, frequency = 2, start = c(47304, 1))
+gb_mint$k3 <- ts(gb_mint$k3, frequency = 2, start = c(47412, 1))
 gb_mint$k6 <- to_matrix_for_ts(fc1_gb_mint, ".mean")
-gb_mint$k6 <- ts(gb_mint$k6, frequency = 1, start = c(47304, 1))
+gb_mint$k6 <- ts(gb_mint$k6, frequency = 1, start = c(47412, 1))
 
 gb_mint <- t(do.call(rbind, rev(gb_mint)))
 
@@ -409,13 +401,13 @@ fc1_gb <- as_tsibble(readRDS(file = "fc1_gb.rds")) %>% filter(.model == "mod1")
 gb <- NULL
 
 gb$k1 <- to_matrix_for_ts(fc10_gb, ".mean")
-gb$k1 <- ts(gb$k1, frequency = 6, start = c(47304, 1))
+gb$k1 <- ts(gb$k1, frequency = 6, start = c(47412, 1))
 gb$k2 <- to_matrix_for_ts(fc20_gb, ".mean")
-gb$k2 <- ts(gb$k2, frequency = 3, start = c(47304, 1))
+gb$k2 <- ts(gb$k2, frequency = 3, start = c(47412, 1))
 gb$k3 <- to_matrix_for_ts(fc30_gb, ".mean")
-gb$k3 <- ts(gb$k3, frequency = 2, start = c(47304, 1))
+gb$k3 <- ts(gb$k3, frequency = 2, start = c(47412, 1))
 gb$k6 <- to_matrix_for_ts(fc1_gb, ".mean")
-gb$k6 <- ts(gb$k6, frequency = 1, start = c(47304, 1))
+gb$k6 <- ts(gb$k6, frequency = 1, start = c(47412, 1))
 
 gb <- t(do.call(rbind, rev(gb)))
 
@@ -428,13 +420,13 @@ fc1_benchmark <- as_tsibble(readRDS(file = "fc1_benchmark.rds"))
 benchmark <- NULL
 
 benchmark$k1 <- to_matrix_for_ts(fc10_benchmark, ".mean")
-benchmark$k1 <- ts(benchmark$k1, frequency = 6, start = c(47304, 1))
+benchmark$k1 <- ts(benchmark$k1, frequency = 6, start = c(47412, 1))
 benchmark$k2 <- to_matrix_for_ts(fc20_benchmark, ".mean")
-benchmark$k2 <- ts(benchmark$k2, frequency = 3, start = c(47304, 1))
+benchmark$k2 <- ts(benchmark$k2, frequency = 3, start = c(47412, 1))
 benchmark$k3 <- to_matrix_for_ts(fc30_benchmark, ".mean")
-benchmark$k3 <- ts(benchmark$k3, frequency = 2, start = c(47304, 1))
+benchmark$k3 <- ts(benchmark$k3, frequency = 2, start = c(47412, 1))
 benchmark$k6 <- to_matrix_for_ts(fc1_benchmark, ".mean")
-benchmark$k6 <- ts(benchmark$k6, frequency = 1, start = c(47304, 1))
+benchmark$k6 <- ts(benchmark$k6, frequency = 1, start = c(47412, 1))
 
 benchmark <- t(do.call(rbind, rev(benchmark)))
 
@@ -460,24 +452,24 @@ values$k6 <- to_matrix_for_ts(hr1, "Energy")
 values$k6 <- ts(values$k6, frequency = 1)
 
 # use this with the entire dataset
-#test$k1 <- values$k1[-c(1:ceiling(dim(values$k1)[1]*TrainingProportion)), ]
-#test$k2 <- values$k2[-c(1:ceiling(dim(values$k2)[1]*TrainingProportion)), ]
-#test$k3 <- values$k3[-c(1:ceiling(dim(values$k3)[1]*TrainingProportion)), ]
-#test$k6 <- values$k6[-c(1:ceiling(dim(values$k6)[1]*TrainingProportion)), ]
+test$k1 <- values$k1[-c(1:ceiling(dim(values$k1)[1]*TrainingProportion)), ]
+test$k2 <- values$k2[-c(1:ceiling(dim(values$k2)[1]*TrainingProportion)), ]
+test$k3 <- values$k3[-c(1:ceiling(dim(values$k3)[1]*TrainingProportion)), ]
+test$k6 <- values$k6[-c(1:ceiling(dim(values$k6)[1]*TrainingProportion)), ]
 
 # use this for small subset of data (can adjust as needed)
-test$k1 <- values$k1[-c(1:dim(values$k1)[1])-7, ]
-test$k2 <- values$k2[-c(1:dim(values$k1)[1])-14, ]
-test$k3 <- values$k3[-c(1:dim(values$k1)[1])-21, ]
-test$k6 <- values$k6[-c(1:dim(values$k1)[1])-42, ]
+#test$k1 <- values$k1[-c(1:dim(values$k1)[1])-26, ]
+#test$k2 <- values$k2[-c(1:dim(values$k1)[1])-52, ]
+#test$k3 <- values$k3[-c(1:dim(values$k1)[1])-78, ]
+#test$k6 <- values$k6[-c(1:dim(values$k1)[1])-156, ]
 
 test <- t(do.call(rbind, rev(test)))
 obs <- values
 
 #### Rename columns ####
 kset <- c(6, 3, 2, 1)
-# need to change this number depending on if using limited subset of full data (for speed) - 876 for full dataset
-h <- 7
+# need to change this number depending on if using limited subset of full data (for speed) - 878 for full dataset, 26 for smaller
+h <- 878
 colnames(benchmark) <- paste("k", rep(kset, h * rev(kset)), "_h",
                              do.call("c", as.list(sapply(
                                rev(kset) * h,
@@ -788,8 +780,8 @@ res_lr <- t(do.call(rbind, rev(residuals)))
 #  |---|    |---|   |---|   |---|
 # A1...A7  B1...B9 C1...C3 D1...D6
 # Names of the bottom level variables
-data_bts <- data.frame(X1 = c("A", "A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B", "B", "B", "B", "C", "C", "C", "D", "D", "D", "D", "D", "D"),
-                       X2 = c("1", "2", "3", "4", "5", "6", "7", "1", "2", "3", "4", "5", "6", "7", "8", "9", "1", "2", "3", "1", "2", "3", "4", "5", "6"),
+data_bts <- data.frame(X1 = c("A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B"),
+                       X2 = c("1", "2", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "1", "2", "3", "4", "5", "6"),
                        stringsAsFactors = FALSE)
 # Cross-sectional aggregation matrix
 C <- Cmatrix(~ X1 / X2, data_bts, sep = "")
@@ -893,9 +885,9 @@ write.csv(rRMSE_ite_recf[1],"rRMSE_ite_recf.csv", row.names = TRUE)
 write.csv(c(rMAE_ite_recf[[2]],rMAE_ite_recf[[3]],rMAE_ite_recf[[4]],rMAE_ite_recf[[5]]), "nemenyi_rMAE_ite_recf.csv")
 write.csv(c(rRMSE_ite_recf[[2]],rRMSE_ite_recf[[3]],rRMSE_ite_recf[[4]],rRMSE_ite_recf[[5]]), "nemenyi_rRMSE_ite_recf.csv")
 
-#### Optimal cross-temporal reconciliation using bdshr (Di Fonzo and Girolimetto, 2020) ####
+#### Optimal cross-temporal reconciliation using wlsv (Di Fonzo and Girolimetto, 2020) ####
 oct_recf <- octrec(FoReco_data$base, m = 6, C = FoReco_data$C,
-                   comb = "bdshr", res = FoReco_data$res)$recf
+                   comb = "wlsv", res = FoReco_data$res)$recf
 # have to set this since the FoReco package has a bug that changes column names for some reason
 colnames(oct_recf) <- colnames(thf_recf)
 
@@ -914,7 +906,7 @@ write.csv(c(rRMSE_oct_recf[[2]],rRMSE_oct_recf[[3]],rRMSE_oct_recf[[4]],rRMSE_oc
 #### Bottom up cross-temporal reconciliation ####
 id <- which(simplify2array(strsplit(colnames(FoReco_data$base),
                                     split = "_"))[1, ] == "k1")
-hfbts <- FoReco_data$base[-c(1:5), id]
+hfbts <- FoReco_data$base[-c(1:3), id]
 obj <- ctbu(Bmat = hfbts, m = 6, C = FoReco_data$C)
 rownames(obj) <- rownames(FoReco_data$base)
 # have to set this since the FoReco package has a bug that changes column names for some reason
@@ -988,8 +980,8 @@ res_gb <- t(do.call(rbind, rev(residuals)))
 #  |---|    |---|   |---|   |---|
 # A1...A7  B1...B9 C1...C3 D1...D6
 # Names of the bottom level variables
-data_bts <- data.frame(X1 = c("A", "A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B", "B", "B", "B", "C", "C", "C", "D", "D", "D", "D", "D", "D"),
-                       X2 = c("1", "2", "3", "4", "5", "6", "7", "1", "2", "3", "4", "5", "6", "7", "8", "9", "1", "2", "3", "1", "2", "3", "4", "5", "6"),
+data_bts <- data.frame(X1 = c("A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B"),
+                       X2 = c("1", "2", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "1", "2", "3", "4", "5", "6"),
                        stringsAsFactors = FALSE)
 # Cross-sectional aggregation matrix
 C <- Cmatrix(~ X1 / X2, data_bts, sep = "")
@@ -1090,9 +1082,9 @@ write.csv(rRMSE_gb_ite_recf[1],"rRMSE_gb_ite_recf.csv", row.names = TRUE)
 write.csv(c(rMAE_gb_ite_recf[[2]],rMAE_gb_ite_recf[[3]],rMAE_gb_ite_recf[[4]],rMAE_gb_ite_recf[[5]]), "nemenyi_rMAE_gb_ite_recf.csv")
 write.csv(c(rRMSE_gb_ite_recf[[2]],rRMSE_gb_ite_recf[[3]],rRMSE_gb_ite_recf[[4]],rRMSE_gb_ite_recf[[5]]), "nemenyi_rRMSE_gb_ite_recf.csv")
 
-#### Optimal cross-temporal reconciliation using bdshr (Di Fonzo and Girolimetto, 2020) ####
+#### Optimal cross-temporal reconciliation using wlsv (Di Fonzo and Girolimetto, 2020) ####
 oct_recf <- octrec(FoReco_data$base, m = 6, C = FoReco_data$C,
-                   comb = "bdshr", res = FoReco_data$res)$recf
+                   comb = "wlsv", res = FoReco_data$res)$recf
 # have to set this since the FoReco package has a bug that changes column names for some reason
 colnames(oct_recf) <- colnames(thf_recf)
 
@@ -1111,7 +1103,7 @@ write.csv(c(rRMSE_gb_oct_recf[[2]],rRMSE_gb_oct_recf[[3]],rRMSE_gb_oct_recf[[4]]
 #### Bottom up cross-temporal reconciliation ####
 id <- which(simplify2array(strsplit(colnames(FoReco_data$base),
                                     split = "_"))[1, ] == "k1")
-hfbts <- FoReco_data$base[-c(1:5), id]
+hfbts <- FoReco_data$base[-c(1:3), id]
 obj <- ctbu(Bmat = hfbts, m = 6, C = FoReco_data$C)
 rownames(obj) <- rownames(FoReco_data$base)
 # have to set this since the FoReco package has a bug that changes column names for some reason

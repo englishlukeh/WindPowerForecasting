@@ -1,4 +1,19 @@
 #### Nemenyi Test ####
+#### Import everything and prepare data ####
+
+library(dplyr)
+library(tsibble)
+library("readxl")
+library(fpp3)
+library(zoo)
+library(stats)
+library(foreach)
+library(doParallel)
+library(lightgbm)
+library(distributional)
+
+
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set this to your working directory
 library(tsutils)
 
 # cross-sec
@@ -22,9 +37,9 @@ tmp1_rRMSE <- x_LR_rRMSE
 tmp1_rMAE <- x_LR_rMAE
 
 nemenyi(x_rMAE, plottype = "mcb")
-nemenyi(x_rRMSE, plottype = "mcb", labels = c("LR", "LR-BU", "LR-TD", "LR-MO", "LR-OLS", "LR-MinT", "GB", "GB-BU", "GB-TD", "GB-MO", "GB-OLS", "GB-MinT"))
+nemenyi(x_rRMSE, plottype = "mcb", labels = c("LR", "LR-BU", "LR-TD", "LR-MO", "LR-OLS", "LR-MinT-Shr", "GB", "GB-BU", "GB-TD", "GB-MO", "GB-OLS", "GB-MinT-Shr"))
 nemenyi(x_LR_rMAE, plottype = "mcb")
-nemenyi(x_LR_rRMSE, plottype = "mcb", labels = c("LR", "LR-BU", "LR-TD", "LR-MO", "LR-OLS", "LR-MinT", "GB", "GB-BU", "GB-TD", "GB-MO", "GB-OLS", "GB-MinT"))
+nemenyi(x_LR_rRMSE, plottype = "mcb", labels = c("LR", "LR-BU", "LR-TD", "LR-MO", "LR-OLS", "LR-MinT-Shr", "GB", "GB-BU", "GB-TD", "GB-MO", "GB-OLS", "GB-MinT-Shr"))
 nemenyi(x_gb_rMAE, plottype = "mcb")
 nemenyi(x_gb_rRMSE, plottype = "mcb")
 
@@ -44,9 +59,9 @@ x_gb_rMAE <- x_rMAE[,8:14]
 x_gb_rRMSE <- x_rRMSE[,8:14]
 
 nemenyi(x_rMAE, plottype = "mcb")
-nemenyi(x_rRMSE, plottype = "mcb", labels = c("LR", "LR-THF", "LR-TCS", "LR-CST", "LR-ITE", "LR-OCT", "LR-BU-CT", "GB", "GB-THF", "GB-TCS", "GB-CST", "GB-ITE", "GB-OCT", "GB-BU-CT"))
+nemenyi(x_rRMSE, plottype = "mcb", labels = c("LR", "LR-T-ACOV", "LR-TCS-WLSV-SHR", "LR-CST-SHR-ACOV", "LR-ITE-ACOV-SHR", "LR-OCT-WLSV", "LR-CT(BU)", "GB", "GB-T-ACOV", "GB-TCS-WLSV-SHR", "GB-CST-SHR-ACOV", "GB-ITE-ACOV-SHR", "GB-OCT-WLSV", "GB-CT(BU)"))
 nemenyi(x_LR_rMAE, plottype = "mcb")
-nemenyi(x_LR_rRMSE, plottype = "mcb", labels = c("LR", "LR-THF", "LR-TCS", "LR-CST", "LR-ITE", "LR-OCT", "LR-BU-CT"))
+nemenyi(x_LR_rRMSE, plottype = "mcb", labels = c("LR", "LR-T-ACOV", "LR-TCS-WLSV-SHR", "LR-CST-SHR-ACOV", "LR-ITE-ACOV-SHR", "LR-OCT-WLSV", "LR-CT(BU)"))
 nemenyi(x_gb_rMAE, plottype = "mcb")
 nemenyi(x_gb_rRMSE, plottype = "mcb")
 

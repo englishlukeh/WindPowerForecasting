@@ -25,7 +25,7 @@ min20 <- readRDS(file = "min20.rds")
 min30 <- readRDS(file = "min30.rds")
 hr1 <- readRDS(file = "hr1.rds")
 
-min10_test <- min10 %>% filter_index("2021-06-20" ~ "2021-06-30")
+min10_test <- min10 #%>% filter_index("2021-06-20" ~ "2021-06-30")
 
 gc()
 
@@ -75,7 +75,7 @@ saveRDS(fc10_benchmark, file = "fc10_benchmark.rds")
 #### Benchmark models - 20 minutely ####
 # we use TSCV, forecasting on rolling origin basis
 
-min20_test <- min20 %>% filter_index("2021-06-20" ~ "2021-06-30")
+min20_test <- min20 #%>% filter_index("2021-06-20" ~ "2021-06-30")
 
 gc()
 
@@ -127,7 +127,7 @@ saveRDS(fc20_benchmark, file = "fc20_benchmark.rds")
 #### Benchmark models - 30 minutely ####
 # we use TSCV, forecasting on rolling origin basis
 
-min30_test <- min30 %>% filter_index("2021-06-20" ~ "2021-06-30")
+min30_test <- min30 #%>% filter_index("2021-06-20" ~ "2021-06-30")
 
 gc()
 
@@ -178,7 +178,7 @@ saveRDS(fc30_benchmark, file = "fc30_benchmark.rds")
 #### Benchmark models - 1 hourly ####
 # we use TSCV, forecasting on rolling origin basis
 
-hr1_test <- hr1 %>% filter_index("2021-06-20" ~ "2021-06-30")
+hr1_test <- hr1 #%>% filter_index("2021-06-20" ~ "2021-06-30")
 
 gc()
 

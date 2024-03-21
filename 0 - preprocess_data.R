@@ -14,34 +14,30 @@ library(distributional)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set this to your working directory
 
-wind_speed <- read_excel("WindSpeed_2020-2021.xlsx")
-wind_speed <- wind_speed %>%
-  mutate(PCTimeStamp = as_datetime(PCTimeStamp)) %>%
-  as_tsibble(index = PCTimeStamp)%>%
-  filter_index("2019" ~ .) #ignore incorrectly entered dates
+turbineA1 <- readr::read_csv("Turbine_Data_Penmanshiel_01_2020-01-01_-_2021-01-01_1042.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A1") %>% slice_head(n=52680)
+turbineA2 <- readr::read_csv("Turbine_Data_Penmanshiel_02_2020-01-01_-_2021-01-01_1043.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A2") %>% slice_head(n=52680)
+turbineA4 <- readr::read_csv("Turbine_Data_Penmanshiel_04_2020-01-01_-_2021-01-01_1044.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A4") %>% slice_head(n=52680)
+turbineA5 <- readr::read_csv("Turbine_Data_Penmanshiel_05_2020-01-01_-_2021-01-01_1045.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A5") %>% slice_head(n=52680)
+turbineA6 <- readr::read_csv("Turbine_Data_Penmanshiel_06_2020-01-01_-_2021-01-01_1046.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A6") %>% slice_head(n=52680)
+turbineA7 <- readr::read_csv("Turbine_Data_Penmanshiel_07_2020-01-01_-_2021-01-01_1047.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A7") %>% slice_head(n=52680)
+turbineA8 <- readr::read_csv("Turbine_Data_Penmanshiel_08_2020-01-01_-_2021-01-01_1048.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A8") %>% slice_head(n=52680)
+turbineA9 <- readr::read_csv("Turbine_Data_Penmanshiel_09_2020-01-01_-_2021-01-01_1049.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A9") %>% slice_head(n=52680)
+turbineA10 <- readr::read_csv("Turbine_Data_Penmanshiel_10_2020-01-01_-_2021-01-01_1050.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A10") %>% slice_head(n=52680)
+turbineA11 <- readr::read_csv("Turbine_Data_Penmanshiel_11_2020-01-01_-_2021-01-01_1051.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A11") %>% slice_head(n=52680)
+turbineA12 <- readr::read_csv("Turbine_Data_Penmanshiel_12_2020-01-01_-_2021-01-01_1052.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A12") %>% slice_head(n=52680)
+turbineA13 <- readr::read_csv("Turbine_Data_Penmanshiel_13_2020-01-01_-_2021-01-01_1053.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A13") %>% slice_head(n=52680)
+turbineA14 <- readr::read_csv("Turbine_Data_Penmanshiel_14_2020-01-01_-_2021-01-01_1054.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A14") %>% slice_head(n=52680)
+turbineA15 <- readr::read_csv("Turbine_Data_Penmanshiel_15_2020-01-01_-_2021-01-01_1056.csv") %>% select(1,2,62) %>% mutate(Group = "A", Subgroup = "A15") %>% slice_head(n=52680)
+turbineB1 <- readr::read_csv("Turbine_Data_Kelmarsh_1_2020-01-01_-_2021-01-01_228.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B1") %>% slice_head(n=52680)
+turbineB2 <- readr::read_csv("Turbine_Data_Kelmarsh_2_2020-01-01_-_2021-01-01_229.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B2") %>% slice_head(n=52680)
+turbineB3 <- readr::read_csv("Turbine_Data_Kelmarsh_3_2020-01-01_-_2021-01-01_230.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B3") %>% slice_head(n=52680)
+turbineB4 <- readr::read_csv("Turbine_Data_Kelmarsh_4_2020-01-01_-_2021-01-01_231.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B4") %>% slice_head(n=52680) 
+turbineB5 <- readr::read_csv("Turbine_Data_Kelmarsh_5_2020-01-01_-_2021-01-01_232.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B5") %>% slice_head(n=52680)
+turbineB6 <- readr::read_csv("Turbine_Data_Kelmarsh_6_2020-01-01_-_2021-01-01_233.csv") %>% select(1,2,62) %>% mutate(Group = "B", Subgroup = "B6") %>% slice_head(n=52680)
 
-power_generation <- readr::read_csv("power_generation.csv")
-power_generation <- power_generation %>%
-  mutate(PCTimeStamp = as_datetime(PCTimeStamp)) %>%
-  as_tsibble(index = PCTimeStamp) %>%
-  filter_index("2019" ~ .) %>% #ignore incorrectly entered dates
-  select(-1, -28, -29) #ignore first column of CSV
-
-#get turbine names
-node_names <- names(power_generation)
-node_names <- node_names[-1]
-
-#convert long table to wide table (i.e., create keys for group/subgroup)
-tmp_wind <- pivot_longer(wind_speed, cols=-1, names_to = "Subgroup", values_to = "Wind_Speed")
-tmp_wind["Group"] <- substr(tmp_wind$Subgroup, 1, 1)
-
-tmp_power <- pivot_longer(power_generation, cols=-1, names_to = "Subgroup", values_to = "Power")
-tmp_power["Group"] <- substr(tmp_power$Subgroup, 1, 1)
-
-#merge all data into one tsibble with keys group (A, B, etc.) and subgroup (A1, A2, etc.)
-dataset <- merge(tmp_wind, tmp_power,by=c("PCTimeStamp", "Group", "Subgroup"))
+dataset <- rbind(turbineA1,turbineA2,turbineA4,turbineA5,turbineA6,turbineA7,turbineA8,turbineA9,turbineA10,turbineA11,turbineA12,turbineA13,turbineA14,turbineA15,turbineB1,turbineB2,turbineB3,turbineB4,turbineB5,turbineB6)
+colnames(dataset) <- c("PCTimeStamp", "Wind_Speed", "Power", "Group", "Subgroup")
 dataset <- dataset %>% as_tsibble(index = PCTimeStamp, key = c("Group", "Subgroup"))
-
 
 #we firstly remove error values (power or wind speed <= 0 and NA)
 dataset[is.na(dataset)] <- 0
